@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "195274152066",
+    "project_id": "gratido-dff85",
+    "storage_bucket": "gratido-dff85.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:195274152066:android:38b702637c27c8eaffbc9b",
+        "android_client_info": {
+          "package_name": "com.example.gratido_sample"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "195274152066-0v9ugr0jq1psehvf6lqjttsph11jlh3d.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.gratido_sample",
+            "certificate_hash": "992c9ffb574dbec6b3b355b6e56cecde48c260b5"
+          }
+        },
+        {
+          "client_id": "195274152066-r9s5m3j0sdaidgpt1p8kqha1kpltdhfu.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyABjQXAvKjwEcD5052paLRS06sb5qHZoQs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "195274152066-r9s5m3j0sdaidgpt1p8kqha1kpltdhfu.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
