@@ -29,6 +29,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
   XFile? _pickedImage;
   final ImagePicker _picker = ImagePicker();
 
+  static const Color primary = Color(0xFF6E5CD6); // donor primary
+  static const Color bgSoft = Color(0xFFF7F3FF); // donor background
+
   @override
   void initState() {
     super.initState();
@@ -59,12 +62,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
   void _saveDetails() {
     Navigator.pop(context, {
       'name': nameController.text.isEmpty ? widget.name : nameController.text,
-      'email': emailController.text.isEmpty
-          ? widget.email
-          : emailController.text,
-      'phone': phoneController.text.isEmpty
-          ? widget.phone
-          : phoneController.text,
+      'email':
+          emailController.text.isEmpty ? widget.email : emailController.text,
+      'phone':
+          phoneController.text.isEmpty ? widget.phone : phoneController.text,
       'address': addressController.text.isEmpty
           ? widget.address
           : addressController.text,
@@ -74,16 +75,15 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    final accent = Colors.black;
     final inputDecoration = InputDecoration(
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       filled: true,
-      fillColor: Colors.white, // pure white input boxes
+      fillColor: Colors.white,
     );
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F7F9),
+      backgroundColor: bgSoft, // ✅ donor palette background
       appBar: AppBar(
         centerTitle: true,
         elevation: 0,
@@ -123,7 +123,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                   child: InkWell(
                     onTap: _pickImage,
                     child: Container(
-                      decoration: BoxDecoration(
+                      decoration: const BoxDecoration(
                         color: Colors.black,
                         shape: BoxShape.circle,
                       ),
@@ -179,7 +179,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
               child: ElevatedButton(
                 onPressed: _saveDetails,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: accent,
+                  backgroundColor: primary, // ✅ donor primary
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -187,7 +187,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 ),
                 child: const Text(
                   'Save my details',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white, // ✅ correct contrast
+                  ),
                 ),
               ),
             ),

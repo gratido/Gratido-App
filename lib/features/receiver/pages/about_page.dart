@@ -1,478 +1,414 @@
-// lib/features/receiver/pages/about_page.dart
-// ignore_for_file: use_super_parameters
-
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'feedback_form.dart';
 
 class AboutPage extends StatelessWidget {
-  const AboutPage({Key? key}) : super(key: key);
+  const AboutPage({super.key});
 
-  // Replace these with your actual asset paths / network urls
-  static const String _logoAsset = 'assets/images/team_grid.svg';
-  static const String _heroAsset = 'assets/images/logo.svg';
+  static const primaryColor = Color(0xFF6E5CD6);
+  static const bgColor = Color(0xFFF7F3FF);
+
+  Future<void> _contactUs() async {
+    final Uri uri = Uri(
+      scheme: 'mailto',
+      path: 'gratido4025@gmail.com',
+      query: Uri.encodeQueryComponent(
+        'subject=Contact Gratido&body=Hello Gratido Team,',
+      ),
+    );
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
 
   @override
   Widget build(BuildContext context) {
-    final accent = const Color(0xFF6A4CFF); // use your app accent if different
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F7F9),
+      backgroundColor: bgColor,
       appBar: AppBar(
+        elevation: 0,
         backgroundColor: Colors.white,
-        elevation: 0.6,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black87),
-          onPressed: () => Navigator.of(context).maybePop(),
+          onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
-          'About',
-          style: TextStyle(color: Colors.black87, fontWeight: FontWeight.w700),
+          "About Gratido",
+          style: TextStyle(fontWeight: FontWeight.w700, color: Colors.black87),
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
+        padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            // Hero block (logo + tagline)
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(14),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black12.withOpacity(0.04),
-                    blurRadius: 12,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-              ),
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  // logo circle
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(48),
-                    child: Container(
-                      width: 72,
-                      height: 72,
-                      color: Colors.grey.shade100,
-                      child: Image.asset(
-                        _logoAsset,
-                        fit: BoxFit.contain,
-                        errorBuilder: (_, __, ___) => const Icon(
-                          Icons.fastfood,
-                          size: 36,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  // text
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
-                        Text(
-                          'Receive kindness. Deliver hope.',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                        SizedBox(height: 6),
-                        Text(
-                          'A community-driven platform connecting surplus food providers to organisations in need.',
-                          style: TextStyle(color: Colors.black54),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 18),
-
-            // Hero image
-            ClipRRect(
-              borderRadius: BorderRadius.circular(14),
-              child: Image.asset(
-                _heroAsset,
-                width: double.infinity,
-                height: 160,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
-                  height: 160,
-                  color: Colors.grey.shade200,
-                  child: const Center(
-                    child: Icon(Icons.image, color: Colors.grey, size: 36),
-                  ),
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 18),
-
-            // Main white content card
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(14),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black12.withOpacity(0.03),
-                    blurRadius: 12,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'About Gratido',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
-                  ),
-                  const SizedBox(height: 10),
-                  const Text(
-                    'Gratido connects volunteers, local kitchens, bakeries and organisations with receivers through a fast and simple app. Our focus is reducing waste and feeding communities — quickly matching available food with organisations that can use it.',
-                    style: TextStyle(color: Colors.black87, height: 1.4),
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Stats row (optional)
-                  Row(
-                    children: [
-                      _StatChip(label: 'Providers', value: '120+'),
-                      const SizedBox(width: 8),
-                      _StatChip(label: 'Pickups/day', value: '340+'),
-                      const SizedBox(width: 8),
-                      _StatChip(label: 'Communities', value: '24'),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
+            _card(_hero()),
             const SizedBox(height: 16),
-
-            // Mission & Vision row
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: _InfoCard(
-                    title: 'Mission',
-                    text:
-                        'Make surplus food accessible to local organisations and communities via a dependable platform for timely redistribution.',
-                    icon: Icons.flag,
-                    accent: accent,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _InfoCard(
-                    title: 'Vision',
-                    text:
-                        'A future where surplus food never goes to waste and local networks thrive.',
-                    icon: Icons.visibility,
-                    accent: accent,
-                  ),
-                ),
-              ],
-            ),
-
+            _banner(),
             const SizedBox(height: 16),
-
-            // Values
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Our values',
-                    style: TextStyle(fontWeight: FontWeight.w800),
-                  ),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: const [
-                      _ValueChip(label: 'Safety'),
-                      _ValueChip(label: 'Freshness'),
-                      _ValueChip(label: 'Fairness'),
-                      _ValueChip(label: 'Community'),
-                      _ValueChip(label: 'Transparency'),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
+            _card(_about()),
             const SizedBox(height: 16),
-
-            // How it works (3 steps)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
-                  Text(
-                    'How it works',
-                    style: TextStyle(fontWeight: FontWeight.w800),
-                  ),
-                  SizedBox(height: 12),
-                  _HowStep(
-                    index: 1,
-                    title: 'Browse listings',
-                    subtitle: 'See nearby food items posted by providers.',
-                  ),
-                  _HowStep(
-                    index: 2,
-                    title: 'Accept what you can pick',
-                    subtitle: 'Tap Accept to reserve the item.',
-                  ),
-                  _HowStep(
-                    index: 3,
-                    title: 'Confirm pickup',
-                    subtitle: 'Track and confirm pickup in-app.',
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 18),
-
-            // Contact / CTA
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Get in touch',
-                    style: TextStyle(fontWeight: FontWeight.w800),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text('Need help or want to partner with us?'),
-                  const SizedBox(height: 10),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () {
-                            // open feedback form
-                            Navigator.of(
-                              context,
-                            ).pushNamed('/feedback'); // adjust route
-                          },
-                          child: const Text('Send feedback'),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      ElevatedButton(
-                        onPressed: () {
-                          // open mail or contact page
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: accent,
-                        ),
-                        child: const Text(
-                          'Contact us',
-                          style: TextStyle(color: Colors.white),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            // Footer small text
+            _missionVisionFixed(),
+            const SizedBox(height: 16),
+            _card(_valuesFixed()),
+            const SizedBox(height: 16),
+            _card(_howItWorks()),
+            const SizedBox(height: 16),
+            _card(_contact(context)),
+            const SizedBox(height: 24),
             const Text(
-              'Version 1.0 • © Gratido 2025',
-              style: TextStyle(color: Colors.black45, fontSize: 12),
+              "Version 1.0 • © Gratido 2025",
+              style: TextStyle(fontSize: 12, color: Colors.black54),
             ),
-            const SizedBox(height: 36),
+            const SizedBox(height: 40),
           ],
         ),
       ),
     );
   }
-}
 
-// small stat chip widget
-class _StatChip extends StatelessWidget {
-  final String label;
-  final String value;
-  const _StatChip({required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
+  // ---------- SHARED CARD ----------
+  Widget _card(Widget child) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(value, style: const TextStyle(fontWeight: FontWeight.w800)),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: const TextStyle(fontSize: 12, color: Colors.black54),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// info card used for mission/vision
-class _InfoCard extends StatelessWidget {
-  final String title;
-  final String text;
-  final IconData icon;
-  final Color accent;
-  const _InfoCard({
-    required this.title,
-    required this.text,
-    required this.icon,
-    required this.accent,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
+      width: double.infinity,
+      padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(24),
       ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: accent.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, color: accent),
+      child: child,
+    );
+  }
+
+  // ---------- HERO (LOGO REPLACED ONLY) ----------
+  Widget _hero() {
+    return Row(
+      children: [
+        Container(
+          width: 56,
+          height: 56,
+          decoration: BoxDecoration(
+            color: primaryColor.withOpacity(.15),
+            borderRadius: BorderRadius.circular(16),
           ),
-          const SizedBox(width: 12),
+          child: SvgPicture.asset(
+            'assets/images/Gratido transperant.svg',
+            colorFilter: ColorFilter.mode(
+              primaryColor,
+              BlendMode.srcIn,
+            ),
+            fit: BoxFit.contain,
+            placeholderBuilder: (_) => const Icon(
+              Icons.image,
+              color: primaryColor,
+            ),
+          ),
+        ),
+        const SizedBox(width: 16),
+        const Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "Receive kindness. Deliver hope.",
+                style: TextStyle(
+                    fontSize: 19,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.black87),
+              ),
+              SizedBox(height: 6),
+              Text(
+                "A community-driven platform connecting surplus food providers to organisations in need.",
+                style: TextStyle(fontSize: 13, color: Colors.black54),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ---------- REST UNCHANGED ----------
+  Widget _banner() {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(24),
+      child: Image.network(
+        "https://lh3.googleusercontent.com/aida-public/AB6AXuDxVRgqUZd_YHK--5p2OOevF_jPEavpN6thKjh63zji3GES7IWEqWKZuXqywSDuH7M-wA_5SS9vOmYBTFuRXk4LGnMPefcdm2NXrhydzpXAz_HYB7EryBnZiQjGL-xCOVs2CvpNVEkURe8I8wXdq8KAua2hiQrZ9-zqz90KtbomgHMs7cpuATFcqt7iKuiT2bJg0N79pJSxgTLNYoDchYNAQwXydOL8lAR-73fiIWloN-6Qml4WRFsDFOGKoEbvO1w4QCjvp04_RO0",
+        height: 180,
+        width: double.infinity,
+        fit: BoxFit.cover,
+      ),
+    );
+  }
+
+  Widget _about() {
+    return const Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text("About Gratido",
+            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
+        SizedBox(height: 8),
+        Text(
+          "Gratido connects volunteers, local kitchens, bakeries and organisations with receivers through a fast and simple app.",
+          style: TextStyle(fontSize: 13, color: Colors.black54),
+        ),
+      ],
+    );
+  }
+
+  // ================= FIX 1 =================
+  Widget _missionVisionFixed() {
+    return IntrinsicHeight(
+      child: Row(
+        children: const [
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(fontWeight: FontWeight.w800),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  text,
-                  style: const TextStyle(color: Colors.black54, fontSize: 13),
-                ),
-              ],
+            child: _EqualIconCard(
+              title: "Mission",
+              icon: Icons.flag,
+              text:
+                  "Make surplus food accessible to local organizations via a dependable platform.",
+            ),
+          ),
+          SizedBox(width: 12),
+          Expanded(
+            child: _EqualIconCard(
+              title: "Vision",
+              icon: Icons.visibility,
+              text:
+                  "A future where surplus food never goes to waste and local networks thrive.",
             ),
           ),
         ],
       ),
     );
   }
-}
 
-// simple value chip
-class _ValueChip extends StatelessWidget {
-  final String label;
-  const _ValueChip({required this.label});
+  // ================= FIX 2 =================
+  Widget _valuesFixed() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text("Our values",
+            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            _valueBar("Safety"),
+            const SizedBox(width: 12),
+            _valueBar("Freshness"),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            _valueBar("Fairness"),
+            const SizedBox(width: 12),
+            _valueBar("Community"),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            _valueBar("Transparency"),
+            const Spacer(),
+          ],
+        ),
+      ],
+    );
+  }
 
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        color: Colors.grey.shade100,
-      ),
-      child: Text(
-        label,
-        style: const TextStyle(
-          fontWeight: FontWeight.w600,
-          color: Colors.black87,
+  Widget _valueBar(String text) {
+    return Expanded(
+      child: Container(
+        height: 38,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.black12),
+        ),
+        child: Text(
+          text,
+          style: const TextStyle(fontSize: 12, color: Colors.black87),
         ),
       ),
     );
   }
+
+  Widget _howItWorks() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: const [
+        Text("How it works",
+            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
+        SizedBox(height: 18),
+        _Step(
+            1, "Browse listings", "See nearby food items posted by providers."),
+        _Step(2, "Accept what you can pick", "Tap Accept to reserve the item."),
+        _Step(3, "Confirm pickup", "Track and confirm pickup in-app.",
+            isLast: true),
+      ],
+    );
+  }
+
+  Widget _contact(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text("Get in touch",
+            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
+        const SizedBox(height: 6),
+        const Text("Need help or want to partner with us?",
+            style: TextStyle(fontSize: 13, color: Colors.black54)),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const FeedbackFormPage()),
+                  );
+                },
+                child:
+                    const Text("Send feedback", style: TextStyle(fontSize: 11)),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: ElevatedButton(
+                onPressed: _contactUs,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: primaryColor,
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text("Contact us", style: TextStyle(fontSize: 11)),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
 }
 
-// how it works step
-class _HowStep extends StatelessWidget {
-  final int index;
+// ================= HELPERS =================
+
+class _EqualIconCard extends StatelessWidget {
   final String title;
-  final String subtitle;
-  const _HowStep({
-    required this.index,
+  final IconData icon;
+  final String text;
+
+  const _EqualIconCard({
     required this.title,
-    required this.subtitle,
+    required this.icon,
+    required this.text,
   });
 
   @override
   Widget build(BuildContext context) {
-    final accent = const Color(0xFF6A4CFF);
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Column(
         children: [
-          CircleAvatar(
-            radius: 18,
-            backgroundColor: accent.withOpacity(0.14),
-            child: Text(
-              '$index',
-              style: TextStyle(color: accent, fontWeight: FontWeight.w700),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
+          // 🔒 FIXED HEIGHT HEADER (ICON + TITLE)
+          SizedBox(
+            height: 78, // 🔑 same for both cards
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                CircleAvatar(
+                  backgroundColor: AboutPage.primaryColor.withOpacity(.15),
+                  child: Icon(icon, color: AboutPage.primaryColor),
+                ),
+                const SizedBox(height: 8),
                 Text(
                   title,
-                  style: const TextStyle(fontWeight: FontWeight.w700),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: const TextStyle(color: Colors.black54, fontSize: 13),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ],
             ),
           ),
+
+          const SizedBox(height: 8),
+
+          // 🔓 FLEXIBLE TEXT AREA
+          Expanded(
+            child: Text(
+              text,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 13,
+                color: Colors.black54,
+              ),
+            ),
+          ),
         ],
       ),
+    );
+  }
+}
+
+class _Step extends StatelessWidget {
+  final int number;
+  final String title;
+  final String desc;
+  final bool isLast;
+
+  const _Step(this.number, this.title, this.desc, {this.isLast = false});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 28,
+          child: Column(
+            children: [
+              CircleAvatar(
+                radius: 13,
+                backgroundColor: AboutPage.primaryColor.withOpacity(.15),
+                child: Text("$number",
+                    style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: AboutPage.primaryColor)),
+              ),
+              if (!isLast)
+                Container(
+                  width: 2,
+                  height: 56,
+                  color: AboutPage.primaryColor.withOpacity(.35),
+                ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title,
+                    style: const TextStyle(
+                        fontSize: 14, fontWeight: FontWeight.w600)),
+                const SizedBox(height: 4),
+                Text(desc,
+                    style:
+                        const TextStyle(fontSize: 13, color: Colors.black54)),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

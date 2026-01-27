@@ -1,14 +1,21 @@
-// lib/features/receiver/receiver_home_page.dart
-import 'dart:async';
-import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
-/// Replace these imports with your real pages
+import 'receiver_detail.dart';
 import 'receiver_listings.dart';
 import 'receiver_profile.dart';
-import 'receiver_detail.dart';
+import 'pages/receiver_notifications_page.dart';
 
+// ✅ NEW IMPORTS (MODEL + DUMMY REPO)
+import 'models/food_item.dart';
+import 'models/dummy_food_repo.dart';
+
+// ================= COLORS =================
+const Color kPrimary = Color(0xFF6E5CD6);
+const Color kPrimarySoft = Color(0x226E5CD6);
+const Color kBg = Color(0xFFF6F3FF);
+
+// ================= PAGE =================
 class ReceiverHomePage extends StatefulWidget {
   const ReceiverHomePage({super.key});
 
@@ -16,356 +23,504 @@ class ReceiverHomePage extends StatefulWidget {
   State<ReceiverHomePage> createState() => _ReceiverHomePageState();
 }
 
-class _ReceiverHomePageState extends State<ReceiverHomePage>
-    with TickerProviderStateMixin {
-  final PageController _carouselController = PageController();
-  Timer? _carouselTimer;
-  int _carouselIndex = 0;
-  int _selectedNav = 0;
+class _ReceiverHomePageState extends State<ReceiverHomePage> {
+  int _navIndex = 0;
 
-  final List<String> rotatingImages = [
-    'https://picsum.photos/1200/600?random=1',
-    'https://picsum.photos/1200/600?random=2',
-    'https://picsum.photos/1200/600?random=3',
-    'https://picsum.photos/1200/600?random=4',
-  ];
-
-  final List<Map<String, dynamic>> _sampleItems = [
-    {
-      'id': 'i0',
-      'title': 'Bakery - Croissants',
-      'time': '10:00 - 12:00',
-      'images': ['https://picsum.photos/seed/1/800/450'],
-      'status': 'open',
-    },
-    {
-      'id': 'i1',
-      'title': 'Prepared - Veg Curry',
-      'time': '15:00 - 17:00',
-      'images': ['https://picsum.photos/seed/2/800/450'],
-      'status': 'open',
-    },
-    {
-      'id': 'i2',
-      'title': 'Cooked Meals - Mixed',
-      'time': '12:00 - 14:00',
-      'images': ['https://picsum.photos/seed/3/800/450'],
-      'status': 'open',
-    },
-    {
-      'id': 'i3',
-      'title': 'Salads - Fresh Garden',
-      'time': '09:30 - 11:30',
-      'images': ['https://picsum.photos/seed/4/800/450'],
-      'status': 'open',
-    },
-  ];
-
-  int _topIndex = 0;
-  final Map<String, AnimationController> _fadeControllers = {};
+  late List<FoodItem> _cards;
 
   @override
   void initState() {
     super.initState();
-
-    // Auto carousel
-    _carouselTimer = Timer.periodic(const Duration(seconds: 4), (timer) {
-      if (!mounted) return;
-      _carouselIndex = (_carouselIndex + 1) % rotatingImages.length;
-      _carouselController.animateToPage(
-        _carouselIndex,
-        duration: const Duration(milliseconds: 600),
-        curve: Curves.easeInOut,
-      );
-    });
-
-    // Precache images (optional with CachedNetworkImage)
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      for (final url in rotatingImages) {
-        precacheImage(NetworkImage(url), context);
-      }
-      for (final item in _sampleItems) {
-        if (item['images'] != null) {
-          for (final im in (item['images'] as List)) {
-            precacheImage(NetworkImage(im.toString()), context);
-          }
-        }
-      }
-    });
+    _cards = DummyFoodRepo.getFoodItems();
   }
 
+  // ================= BUILD =================
   @override
-  void dispose() {
-    _carouselTimer?.cancel();
-    _carouselController.dispose();
-    for (final c in _fadeControllers.values) {
-      c.dispose();
-    }
-    super.dispose();
-  }
-
-  List<Map<String, dynamic>> get _visibleList {
-    if (_topIndex >= _sampleItems.length) return [];
-    return _sampleItems.sublist(_topIndex);
-  }
-
-  Future<void> _declineTopItemWithFade() async {
-    if (_topIndex >= _sampleItems.length) return;
-    final idx = _topIndex;
-    final id = _sampleItems[idx]['id'] as String;
-
-    final controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 420),
-    );
-    _fadeControllers[id] = controller;
-
-    await controller.forward();
-
-    setState(() {
-      _sampleItems[idx]['status'] = 'declined';
-      _topIndex += 1;
-    });
-
-    controller.dispose();
-    _fadeControllers.remove(id);
-  }
-
-  void _acceptTopItem({
-    bool navigateToDetail = false,
-    Map<String, dynamic>? item,
-  }) {
-    if (_topIndex >= _sampleItems.length) return;
-    final acceptedItem =
-        item ?? Map<String, dynamic>.from(_sampleItems[_topIndex]);
-    _sampleItems[_topIndex]['status'] = 'accepted';
-
-    setState(() {
-      _topIndex += 1;
-    });
-
-    if (navigateToDetail) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => ReceiverDetailPage(item: acceptedItem),
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: kBg,
+      resizeToAvoidBottomInset: false,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.only(bottom: 40),
+          child: Column(
+            children: [
+              const SizedBox(height: 10),
+              _header(),
+              const SizedBox(height: 11),
+              _search(),
+              const SizedBox(height: 15),
+              _hero(),
+              const SizedBox(height: 20),
+              _stackArea(),
+              const SizedBox(height: 8),
+              _swipeHint(),
+            ],
+          ),
         ),
-      );
-    }
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      floatingActionButton: _fab(),
+      bottomNavigationBar: _bottomNav(),
+    );
   }
 
-  void _onCarouselTap(int index) {
-    final url = rotatingImages[index];
-    showDialog(
-      context: context,
-      builder: (_) => Dialog(
-        insetPadding: const EdgeInsets.all(12),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AspectRatio(
-              aspectRatio: 16 / 9,
-              child: CachedNetworkImage(
-                imageUrl: url,
-                placeholder: (_, __) =>
-                    const Center(child: CircularProgressIndicator()),
-                errorWidget: (_, __, ___) => const Icon(Icons.broken_image),
-                fit: BoxFit.cover,
-                width: double.infinity,
+  // ================= HEADER =================
+  Widget _header() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Row(
+        children: [
+          const Icon(Icons.location_on, color: kPrimary),
+          const SizedBox(width: 6),
+          const Text(
+            "Downtown Seattle, WA",
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          const Spacer(),
+          IconButton(
+            icon: const Icon(Icons.notifications_none),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const ReceiverNotificationsPage(),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ================= SEARCH =================
+  Widget _search() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: TextField(
+        decoration: InputDecoration(
+          hintText: "Search for food near you...",
+          hintStyle: const TextStyle(
+            color: Colors.grey,
+            fontSize: 14,
+          ),
+          floatingLabelBehavior: FloatingLabelBehavior.never,
+          prefixIcon: const Icon(Icons.search),
+          filled: true,
+          fillColor: Colors.white,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(24),
+            borderSide: BorderSide.none,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ================= HERO =================
+  Widget _hero() {
+    return SizedBox(
+      height: 200,
+      child: PageView(
+        children: const [
+          _HeroCard(
+            image: "assets/images/h1.svg",
+            title: "From Excess to Impact",
+            subtitle:
+                "Every meal shared is a step towards a zero-waste community.",
+          ),
+          _HeroCard(
+            image: "assets/images/h2.jpeg",
+            title: "Share Food. Share Hope.",
+            subtitle: "Connecting surplus meals with those who need them.",
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ================= STACK =================
+  Widget _stackArea() {
+    const cardHeight = 360.0;
+    const verticalOffset = 24.0;
+    const maxVisible = 3;
+    const bottomPadding = 16.0;
+
+    final visibleCards = _cards.take(maxVisible).toList();
+
+    return SizedBox(
+      height: cardHeight +
+          (visibleCards.length - 1) * verticalOffset +
+          bottomPadding,
+      child: Stack(
+        alignment: Alignment.topCenter,
+        clipBehavior: Clip.none,
+        children: List.generate(visibleCards.length, (i) {
+          final depth = visibleCards.length - 1 - i;
+          final card = visibleCards[i];
+
+          final scale = 1.0 - depth * 0.035;
+
+          return Positioned(
+            top: depth * verticalOffset,
+            left: 20,
+            right: 20,
+            child: Transform.scale(
+              scale: scale,
+              alignment: Alignment.topCenter,
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(32),
+                  boxShadow: [
+                    BoxShadow(
+                      color: kPrimary.withOpacity(
+                        depth == 0 ? 0.25 : 0.10,
+                      ),
+                      blurRadius: depth == 0 ? 40 : 28,
+                      spreadRadius: 2,
+                      offset: const Offset(0, 16),
+                    ),
+                  ],
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  elevation: 0,
+                  borderRadius: BorderRadius.circular(32),
+                  child: _SwipeCard(
+                    card: card,
+                    onAccept: () => _accept(card),
+                    onDecline: () => _decline(card),
+                  ),
+                ),
               ),
             ),
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Close'),
+          );
+        }),
+      ),
+    );
+  }
+
+  // ================= ACTIONS =================
+  void _accept(FoodItem item) {
+    setState(() => _cards.remove(item));
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ReceiverDetailPage(item: item),
+      ),
+    );
+  }
+
+  void _decline(FoodItem item) {
+    setState(() => _cards.remove(item));
+  }
+
+  // ================= FOOTER =================
+  Widget _swipeHint() {
+    return const Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(Icons.keyboard_double_arrow_up, color: Colors.grey, size: 16),
+        Text(
+          "SWIPE LEFT TO DECLINE • RIGHT TO ACCEPT",
+          style: TextStyle(
+            fontSize: 9,
+            color: Colors.grey,
+            letterSpacing: 0.6,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ================= FAB =================
+  Widget _fab() {
+    return Container(
+      width: 64,
+      height: 64,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: kPrimary,
+        boxShadow: [
+          BoxShadow(
+            color: kPrimary.withOpacity(0.6),
+            blurRadius: 28,
+            offset: const Offset(0, 14),
+          ),
+        ],
+      ),
+      child: IconButton(
+        icon: const Icon(Icons.list_alt, color: Colors.white, size: 28),
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const ReceiverListingsPage(),
             ),
+          );
+        },
+      ),
+    );
+  }
+
+  // ================= NAV =================
+  Widget _bottomNav() {
+    return BottomAppBar(
+      color: Colors.white,
+      shape: const CircularNotchedRectangle(),
+      child: SizedBox(
+        height: 10,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            _nav(Icons.home, "Home", 0),
+            const SizedBox(width: 40),
+            _nav(Icons.person, "Profile", 1),
           ],
         ),
       ),
     );
   }
 
+  Widget _nav(IconData icon, String label, int index) {
+    final selected = _navIndex == index;
+    return InkWell(
+      onTap: () {
+        if (index == 1) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const ReceiverProfilePage(),
+            ),
+          );
+        }
+        setState(() => _navIndex = index);
+      },
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: selected ? kPrimary : Colors.grey),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10,
+              color: selected ? kPrimary : Colors.grey,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ================= HERO CARD =================
+class _HeroCard extends StatelessWidget {
+  final String image;
+  final String title;
+  final String subtitle;
+
+  const _HeroCard({
+    required this.image,
+    required this.title,
+    required this.subtitle,
+  });
+
   @override
   Widget build(BuildContext context) {
-    final visible = _visibleList;
-    final mq = MediaQuery.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            // ---------- IMAGE ----------
+            image.endsWith('.svg')
+                ? SvgPicture.asset(
+                    image,
+                    fit: BoxFit.cover,
+                  )
+                : Image.asset(
+                    image,
+                    fit: BoxFit.cover,
+                  ),
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF2F6FF),
-      body: Stack(
-        children: [
-          SafeArea(
-            child: Column(
-              children: [
-                const SizedBox(height: 12),
+            // ---------- CONTRAST REDUCER (softens image) ----------
+            Container(
+              color: Colors.black.withOpacity(0.08),
+            ),
 
-                // Header: only location
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Row(
-                    children: const [
-                      Icon(
-                        Icons.location_on_outlined,
-                        color: Colors.deepPurple,
-                      ),
-                      SizedBox(width: 8),
-                      Text(
-                        'Current location',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
+            // ---------- PURPLE GRADIENT SHADOW ----------
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              height: 120,
+              child: Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.bottomCenter,
+                    end: Alignment.topCenter,
+                    colors: [
+                      Color.fromARGB(230, 0, 0, 0), // deep purple
+                      Color.fromARGB(153, 0, 0, 0),
+                      Color(0x332E1F5E),
+                      Colors.transparent,
                     ],
                   ),
                 ),
+              ),
+            ),
 
-                // Extra spacing to move down search bar & carousel
-                const SizedBox(height: 20),
-
-                // Search bar
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: GestureDetector(
-                    onTap: () async {
-                      await showSearch(
-                        context: context,
-                        delegate: _SimpleSearchDelegate(),
-                      );
-                    },
-                    child: Container(
-                      height: 50,
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(28),
-                        boxShadow: const [
-                          BoxShadow(blurRadius: 6, color: Colors.black12),
-                        ],
-                      ),
-                      child: Row(
-                        children: const [
-                          Expanded(
-                            child: Text(
-                              'Search...',
-                              style: TextStyle(
-                                color: Colors.black45,
-                                fontSize: 16,
-                              ),
-                            ),
-                          ),
-                          Icon(Icons.search, color: Colors.black45),
-                        ],
-                      ),
+            // ---------- TEXT ----------
+            Positioned(
+              left: 16,
+              right: 16,
+              bottom: 18,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
-                ),
-
-                const SizedBox(height: 20),
-
-                // Carousel
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(18),
-                    child: SizedBox(
-                      height: 200,
-                      child: PageView.builder(
-                        controller: _carouselController,
-                        itemCount: rotatingImages.length,
-                        onPageChanged: (i) =>
-                            setState(() => _carouselIndex = i),
-                        itemBuilder: (c, index) {
-                          final url = rotatingImages[index];
-                          return GestureDetector(
-                            onTap: () => _onCarouselTap(index),
-                            child: CachedNetworkImage(
-                              imageUrl: url,
-                              placeholder: (_, __) => Container(
-                                color: Colors.grey[200],
-                                child: const Center(
-                                  child: CircularProgressIndicator(),
-                                ),
-                              ),
-                              errorWidget: (_, __, ___) => Container(
-                                color: Colors.grey[200],
-                                child: const Center(
-                                  child: Icon(Icons.broken_image),
-                                ),
-                              ),
-                              fit: BoxFit.cover,
-                              width: double.infinity,
-                            ),
-                          );
-                        },
-                      ),
+                  const SizedBox(height: 6),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      color: Color(0xFFE6DEFF),
+                      fontSize: 14,
                     ),
                   ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ================= SWIPE CARD =================
+class _SwipeCard extends StatefulWidget {
+  final FoodItem card;
+  final VoidCallback onAccept;
+  final VoidCallback onDecline;
+
+  const _SwipeCard({
+    required this.card,
+    required this.onAccept,
+    required this.onDecline,
+  });
+
+  @override
+  State<_SwipeCard> createState() => _SwipeCardState();
+}
+
+class _SwipeCardState extends State<_SwipeCard> {
+  double _dx = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onHorizontalDragUpdate: (d) {
+        setState(() => _dx += d.delta.dx);
+      },
+      onHorizontalDragEnd: (_) {
+        if (_dx > 120) {
+          widget.onAccept();
+        } else if (_dx < -120) {
+          widget.onDecline();
+        }
+        setState(() => _dx = 0);
+      },
+      child: Transform.translate(
+        offset: Offset(_dx, 0),
+        child: _foodCard(widget.card),
+      ),
+    );
+  }
+
+  Widget _foodCard(FoodItem card) {
+    return Material(
+      borderRadius: BorderRadius.circular(32),
+      elevation: 10,
+      color: Colors.white,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 14, 14, 0),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(24),
+              child: Image.asset(
+                card.images.first,
+                height: 160,
+                width: double.infinity,
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 14, 20, 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  card.title,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-
-                const SizedBox(height: 22),
-
-                // Card stack
-                Expanded(
-                  child: visible.isEmpty
-                      ? const Center(
-                          child: Text(
-                            'No more listings',
-                            style: TextStyle(
-                              fontSize: 18,
-                              color: Colors.black54,
-                            ),
-                          ),
-                        )
-                      : LayoutBuilder(
-                          builder: (context, constraints) {
-                            final stackOffset = constraints.maxHeight * 0.06;
-                            return Stack(
-                              alignment: Alignment.topCenter,
-                              children: [
-                                for (int i = visible.length - 1; i >= 0; i--)
-                                  if (i <= 2)
-                                    _buildStackCard(
-                                      item: visible[i],
-                                      depth: i,
-                                      globalIndex: _topIndex + i,
-                                      isTop: i == 0,
-                                      extraTopOffset: stackOffset,
-                                    ),
-                              ],
-                            );
-                          },
-                        ),
+                const SizedBox(height: 2),
+                Text(
+                  card.category,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey,
+                  ),
                 ),
-
-                SizedBox(height: mq.padding.bottom + 36),
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    _infoColumn(
+                      icon: Icons.schedule,
+                      label: "Pickup",
+                      value: card.pickupTime,
+                    ),
+                    _divider(),
+                    _infoColumn(
+                      icon: Icons.restaurant,
+                      label: "Quantity",
+                      value: card.quantity,
+                    ),
+                    _divider(),
+                    _infoColumn(
+                      icon: Icons.calendar_today,
+                      label: "Expiry",
+                      value: card.expiry,
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
-
-          // Floating nav bar
-          Positioned(
-            bottom: 18,
-            left: 16,
-            right: 16,
-            child: SoftGlassNavBar(
-              selectedIndex: _selectedNav,
-              onTap: (i) {
-                if (i == 0) {
-                  setState(() => _selectedNav = 0);
-                } else if (i == 10) {
-                  setState(() => _selectedNav = 1);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => ReceiverListingsPage()),
-                  );
-                } else if (i == 1) {
-                  setState(() => _selectedNav = 2);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => ReceiverProfilePage()),
-                  );
-                }
-              },
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+            child: Row(
+              children: [
+                _pill("DECLINE", kPrimarySoft, widget.onDecline),
+                const SizedBox(width: 12),
+                _pill("ACCEPT", kPrimary, widget.onAccept),
+              ],
             ),
           ),
         ],
@@ -373,350 +528,82 @@ class _ReceiverHomePageState extends State<ReceiverHomePage>
     );
   }
 
-  // ------------------ _buildStackCard ------------------
-  Widget _buildStackCard({
-    required Map<String, dynamic> item,
-    required int depth,
-    required int globalIndex,
-    required bool isTop,
-    double extraTopOffset = 0,
+  Widget _infoColumn({
+    required IconData icon,
+    required String label,
+    required String value,
   }) {
-    final double top = 8 + extraTopOffset + depth * 14;
-    final double inset = depth * 14;
-    final double scale = 1 - depth * 0.018;
-    const double cardHeight = 360;
-
-    final id = item['id'] as String?;
-    final fadeController = id != null ? _fadeControllers[id] : null;
-
-    Widget content = Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      elevation: (12 - depth * 3).clamp(2, 12).toDouble(),
-      child: SizedBox(
-        height: cardHeight,
-        child: Column(
-          children: [
-            // Image
-            ClipRRect(
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(16),
-              ),
-              child: AspectRatio(
-                aspectRatio: 16 / 9,
-                child: CachedNetworkImage(
-                  imageUrl: (item['images'] as List).isNotEmpty
-                      ? item['images'][0]
-                      : '',
-                  placeholder: (_, __) => Container(
-                    color: Colors.grey[200],
-                    child: const Center(child: CircularProgressIndicator()),
-                  ),
-                  errorWidget: (_, __, ___) => Container(
-                    color: Colors.grey[200],
-                    child: const Center(child: Icon(Icons.broken_image)),
-                  ),
-                  fit: BoxFit.cover,
-                  width: double.infinity,
-                ),
-              ),
-            ),
-
-            // Content
-            Expanded(
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 12,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      item['title'] ?? '',
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'Pickup Time: ${item['time'] ?? ''}',
-                      style: const TextStyle(color: Colors.grey),
-                    ),
-                    const Spacer(),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: () async {
-                              final _ = item['id'] as String;
-                              await _declineTopItemWithFade();
-                              // No snackbar on decline by button (or optionally keep)
-                            },
-                            style: OutlinedButton.styleFrom(
-                              backgroundColor: Colors.grey[100],
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                            ),
-                            child: const Text('DECLINE'),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: ElevatedButton(
-                            onPressed: () {
-                              _acceptTopItem(
-                                navigateToDetail: true,
-                                item: item,
-                              );
-                              // No snackbar on accept by button (or optionally keep)
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.deepPurple,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                            ),
-                            child: const Text('ACCEPT'),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-
-    if (!isTop) {
-      return Positioned(
-        top: top + 6,
-        left: 20 + inset,
-        right: 20 + inset,
-        child: Transform.scale(
-          scale: scale,
-          alignment: Alignment.topCenter,
-          child: Opacity(opacity: 1 - depth * 0.08, child: content),
-        ),
-      );
-    }
-
-    // Top card: Dismissible with custom swipe backgrounds & blur
-    return Positioned(
-      top: top,
-      left: 20,
-      right: 20,
-      child: Transform.scale(
-        scale: scale,
-        alignment: Alignment.topCenter,
-        child: Dismissible(
-          key: ValueKey(item['id']),
-          direction: DismissDirection.horizontal,
-          background: _buildSwipeBackground(
-            color: Colors.purple.withOpacity(0.8),
-            alignment: Alignment.centerLeft,
-          ),
-          secondaryBackground: _buildSwipeBackground(
-            color: Colors.orange.withOpacity(0.8),
-            alignment: Alignment.centerRight,
-          ),
-          confirmDismiss: (direction) async {
-            if (direction == DismissDirection.startToEnd) {
-              // Swipe right = accept
-              _acceptTopItem(navigateToDetail: true, item: item);
-              return true;
-            } else {
-              // Swipe left = decline
-              await _declineTopItemWithFade();
-              return true;
-            }
-          },
-          onDismissed: (_) {
-            if (_topIndex < 0) _topIndex = 0;
-          },
-          child: fadeController != null
-              ? AnimatedBuilder(
-                  animation: fadeController,
-                  builder: (_, child) {
-                    final t = fadeController.value;
-                    return Opacity(opacity: 1 - t, child: child);
-                  },
-                  child: content,
-                )
-              : content,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSwipeBackground({
-    required Color color,
-    required Alignment alignment,
-  }) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(16),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-        child: Container(
-          color: color,
-          alignment: alignment,
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-        ),
-      ),
-    );
-  }
-}
-
-// ----------------- SoftGlassNavBar -----------------
-class SoftGlassNavBar extends StatelessWidget {
-  final int selectedIndex;
-  final Function(int) onTap;
-
-  const SoftGlassNavBar({
-    super.key,
-    required this.selectedIndex,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(40),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-        child: Container(
-          height: 72,
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.55),
-            borderRadius: BorderRadius.circular(40),
-            border: Border.all(
-              color: Colors.white.withOpacity(0.28),
-              width: 1.2,
-            ),
-            boxShadow: const [
-              BoxShadow(
-                color: Colors.black12,
-                blurRadius: 8,
-                offset: Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
+    return Expanded(
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: kPrimary),
+          const SizedBox(width: 6),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _iconButton(context, Icons.home_rounded, 0),
-              _centerFab(context),
-              _iconButton(context, Icons.person_rounded, 1),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _iconButton(BuildContext context, IconData icon, int index) {
-    final active = selectedIndex == index;
-    return GestureDetector(
-      onTap: () => onTap(index),
-      behavior: HitTestBehavior.opaque,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 6),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              size: 26,
-              color: active ? Colors.deepPurple : Colors.black54,
-            ),
-            const SizedBox(height: 4),
-            if (active)
-              Container(
-                width: 26,
-                height: 3,
-                decoration: BoxDecoration(
-                  color: Colors.deepPurple,
-                  borderRadius: BorderRadius.circular(2),
+              Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 9,
+                  color: Colors.grey,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
-          ],
-        ),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
 
-  Widget _centerFab(BuildContext context) {
-    return GestureDetector(
-      onTap: () => onTap(10),
-      child: Container(
-        height: 62,
-        width: 62,
-        decoration: BoxDecoration(
-          color: Colors.deepPurple,
-          shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.deepPurple.withOpacity(0.28),
-              blurRadius: 14,
-              spreadRadius: 2,
+  Widget _divider() {
+    return Container(
+      width: 1,
+      height: 28,
+      margin: const EdgeInsets.symmetric(horizontal: 10),
+      color: Colors.grey.shade300.withOpacity(0.6),
+    );
+  }
+
+  Widget _pill(String text, Color bg, VoidCallback onTap) {
+    return Expanded(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(22),
+        child: Container(
+          height: 40,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: BorderRadius.circular(22),
+            boxShadow: bg == kPrimary
+                ? [
+                    BoxShadow(
+                      color: kPrimary.withOpacity(0.25),
+                      blurRadius: 14,
+                      offset: const Offset(0, 6),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Text(
+            text,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 0.8,
+              color: bg == kPrimary ? Colors.white : Colors.black54,
             ),
-          ],
+          ),
         ),
-        child: const Icon(Icons.add_rounded, size: 32, color: Colors.white),
-      ),
-    );
-  }
-}
-
-// ----------------- Simple Search Delegate -----------------
-class _SimpleSearchDelegate extends SearchDelegate<String> {
-  final List<String> _fakeSuggestions = [
-    'Bakery',
-    'Salads',
-    'Cooked Meals',
-    'Prepared',
-  ];
-
-  @override
-  List<Widget>? buildActions(BuildContext context) => [
-    if (query.isNotEmpty)
-      IconButton(onPressed: () => query = '', icon: const Icon(Icons.clear)),
-  ];
-
-  @override
-  Widget? buildLeading(BuildContext context) => IconButton(
-    onPressed: () => close(context, ''),
-    icon: const Icon(Icons.arrow_back),
-  );
-
-  @override
-  Widget buildResults(BuildContext context) {
-    return Center(child: Text('Search results for "$query"'));
-  }
-
-  @override
-  Widget buildSuggestions(BuildContext context) {
-    final suggestions = query.isEmpty
-        ? _fakeSuggestions
-        : _fakeSuggestions
-              .where((s) => s.toLowerCase().contains(query.toLowerCase()))
-              .toList();
-
-    return ListView.builder(
-      itemCount: suggestions.length,
-      itemBuilder: (_, i) => ListTile(
-        title: Text(suggestions[i]),
-        onTap: () {
-          query = suggestions[i];
-          showResults(context);
-        },
       ),
     );
   }

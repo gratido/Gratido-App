@@ -3,9 +3,6 @@
 
 import 'package:flutter/material.dart';
 
-/// Provider FAQ page — same visual style as the receiver FAQ (search bar, result count,
-/// rounded cards, expand/collapse). Keeps all previously provided provider Q&A.
-/// Use: Navigator.push(context, MaterialPageRoute(builder: (_) => const FAQProviderPage()));
 class FAQProviderPage extends StatefulWidget {
   const FAQProviderPage({Key? key}) : super(key: key);
 
@@ -16,6 +13,9 @@ class FAQProviderPage extends StatefulWidget {
 class _FAQProviderPageState extends State<FAQProviderPage> {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocus = FocusNode();
+
+  static const Color primary = Color(0xFF6E5CD6);
+  static const Color softBg = Color(0xFFF7F3FF);
 
   static final List<Map<String, String>> _allFaqs = [
     {
@@ -104,20 +104,17 @@ class _FAQProviderPageState extends State<FAQProviderPage> {
 
   @override
   Widget build(BuildContext context) {
-    final accent = const Color(0xFF6A4CFF);
-
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: softBg,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
-        iconTheme: const IconThemeData(color: Colors.black87),
+        iconTheme: const IconThemeData(color: Colors.black),
         title: const Text(
           'FAQs',
           style: TextStyle(
-            color: Colors.black87,
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w700,
             fontSize: 20,
           ),
         ),
@@ -125,87 +122,64 @@ class _FAQProviderPageState extends State<FAQProviderPage> {
       body: SafeArea(
         child: Column(
           children: [
-            // Search bar (receiver-style)
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Semantics(
-                      label: 'Search FAQs',
-                      textField: true,
-                      child: TextField(
-                        controller: _searchController,
-                        focusNode: _searchFocus,
-                        textInputAction: TextInputAction.search,
-                        decoration: InputDecoration(
-                          hintText: 'Search questions...',
-                          filled: true,
-                          fillColor: Colors.white,
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 12,
-                          ),
-                          prefixIcon: const Icon(
-                            Icons.search,
-                            color: Colors.black45,
-                          ),
-                          suffixIcon: _searchController.text.isNotEmpty
-                              ? IconButton(
-                                  icon: const Icon(
-                                    Icons.clear,
-                                    color: Colors.black45,
-                                  ),
-                                  onPressed: () {
-                                    _searchController.clear();
-                                    _searchFocus.unfocus();
-                                  },
-                                )
-                              : null,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide.none,
-                          ),
-                        ),
-                      ),
-                    ),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: TextField(
+                controller: _searchController,
+                focusNode: _searchFocus,
+                textInputAction: TextInputAction.search,
+                decoration: InputDecoration(
+                  hintText: 'Search questions...',
+                  filled: true,
+                  fillColor: Colors.white,
+                  prefixIcon: const Icon(Icons.search, color: Colors.black45),
+                  suffixIcon: _searchController.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear, color: Colors.black45),
+                          onPressed: () {
+                            _searchController.clear();
+                            _searchFocus.unfocus();
+                          },
+                        )
+                      : null,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
                   ),
-                ],
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(18),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
               ),
             ),
-
-            // results count
             Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16.0,
-                vertical: 6,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
               child: Row(
                 children: [
                   Text(
                     '${_visibleFaqs.length} result${_visibleFaqs.length == 1 ? '' : 's'}',
-                    style: TextStyle(color: Colors.grey[700]),
+                    style: TextStyle(color: Colors.grey.shade700),
                   ),
                 ],
               ),
             ),
-
-            // FAQ list (receiver-like card style)
             Expanded(
               child: _visibleFaqs.isEmpty
-                  ? const Center(child: Text('No FAQs match your search.'))
+                  ? const Center(
+                      child: Text('No FAQs match your search.'),
+                    )
                   : ListView.builder(
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
                       physics: const BouncingScrollPhysics(),
                       itemCount: _visibleFaqs.length,
                       itemBuilder: (context, index) {
                         final item = _visibleFaqs[index];
                         return Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
+                          padding: const EdgeInsets.only(bottom: 14),
                           child: _AnimatedFaqCard(
                             question: item['q'] ?? '',
                             answer: item['a'] ?? '',
-                            accent: accent,
                           ),
                         );
                       },
@@ -218,17 +192,15 @@ class _FAQProviderPageState extends State<FAQProviderPage> {
   }
 }
 
-/// Animated card with expand/collapse behaviour and smooth size animation.
+/// 🎬 Animated FAQ Card
 class _AnimatedFaqCard extends StatefulWidget {
   final String question;
   final String answer;
-  final Color accent;
 
   const _AnimatedFaqCard({
     Key? key,
     required this.question,
     required this.answer,
-    required this.accent,
   }) : super(key: key);
 
   @override
@@ -238,74 +210,68 @@ class _AnimatedFaqCard extends StatefulWidget {
 class _AnimatedFaqCardState extends State<_AnimatedFaqCard> {
   bool _expanded = false;
 
+  static const Color primary = Color(0xFF6E5CD6);
+
   void _toggle() => setState(() => _expanded = !_expanded);
 
   @override
   Widget build(BuildContext context) {
     return Material(
-      elevation: 2,
-      borderRadius: BorderRadius.circular(14),
+      elevation: 0,
+      borderRadius: BorderRadius.circular(20),
       color: Colors.white,
-      child: AnimatedSize(
-        duration: const Duration(milliseconds: 220),
-        curve: Curves.easeInOut,
-        child: InkWell(
-          onTap: _toggle,
-          borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        onTap: _toggle,
+        borderRadius: BorderRadius.circular(20),
+        child: AnimatedSize(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeInOut,
           child: Padding(
-            padding: const EdgeInsets.all(14),
+            padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // top row: question + rotating arrow
                 Row(
                   children: [
                     Expanded(
-                      child: Semantics(
-                        label: widget.question,
-                        button: true,
-                        hint: _expanded ? 'Tap to collapse' : 'Tap to expand',
-                        child: Text(
-                          widget.question,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.black87,
-                          ),
+                      child: Text(
+                        widget.question,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ),
                     TweenAnimationBuilder<double>(
                       tween: Tween<double>(
-                        begin: 0.0,
-                        end: _expanded ? 0.5 : 0.0,
+                        begin: 0,
+                        end: _expanded ? 1.0 : 0.0, // ✅ ONLY CHANGE
                       ),
                       duration: const Duration(milliseconds: 220),
-                      builder: (context, val, child) {
+                      builder: (_, value, child) {
                         return Transform.rotate(
-                          angle: val * 3.1415926535,
+                          angle: value * 3.14159,
                           child: child,
                         );
                       },
                       child: Icon(
                         Icons.keyboard_arrow_down,
-                        color: Colors.black54,
+                        color: primary,
                         size: 26,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 10),
                 AnimatedCrossFade(
                   firstChild: const SizedBox.shrink(),
                   secondChild: Padding(
-                    padding: const EdgeInsets.only(top: 4),
+                    padding: const EdgeInsets.only(top: 12),
                     child: Text(
                       widget.answer,
                       style: const TextStyle(
                         fontSize: 14,
-                        color: Colors.black87,
                         height: 1.5,
+                        color: Colors.black87,
                       ),
                     ),
                   ),
@@ -313,8 +279,6 @@ class _AnimatedFaqCardState extends State<_AnimatedFaqCard> {
                       ? CrossFadeState.showSecond
                       : CrossFadeState.showFirst,
                   duration: const Duration(milliseconds: 220),
-                  firstCurve: Curves.easeOut,
-                  secondCurve: Curves.easeIn,
                 ),
               ],
             ),

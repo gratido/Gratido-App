@@ -48,8 +48,7 @@ class _AddDonationsScreenState extends State<AddDonationsScreen>
   }
 
   Future<void> _submitDonation() async {
-    final contactValid =
-        _contact.donorController.text.trim().isNotEmpty &&
+    final contactValid = _contact.donorController.text.trim().isNotEmpty &&
         _contact.phoneController.text.trim().length >= 10 &&
         _contact.pickupController.text.trim().isNotEmpty;
 
@@ -71,9 +70,8 @@ class _AddDonationsScreenState extends State<AddDonationsScreen>
       pickupWindow: _food.pickupWindow == 'Other'
           ? 'Other'
           : (_food.pickupWindow ?? 'ASAP'),
-      pickupWindowOther: _food.pickupWindow == 'Other'
-          ? _food.pickupWindowOther
-          : null,
+      pickupWindowOther:
+          _food.pickupWindow == 'Other' ? _food.pickupWindowOther : null,
       category: _food.category ?? 'Cooked Meals',
       foodName: _food.foodName?.trim(), // <-- NEW: save Food Name
       quantity: _food.quantity,
@@ -171,48 +169,71 @@ class _AddDonationsScreenState extends State<AddDonationsScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F8F8),
-      appBar: AppBar(
-        title: const Text("Donate"),
-        bottom: TabBar(
-          controller: _tabController,
-          onTap: (index) {
-            // Block manual tap to Food tab unless contact is valid
-            if (index == 1 &&
-                !(_contactFormKey.currentState?.validate() ?? false)) {
-              _tabController.index = 0;
-            }
-          },
-          tabs: const [
-            Tab(text: "Contact"),
-            Tab(text: "Food details"),
-          ],
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0x1A6E5CD6), // 10% purple wash
+              Color(0x00FFFFFF), // fade to transparent
+            ],
+          ),
         ),
-      ),
-      body: TabBarView(
-        controller: _tabController,
-        physics: const NeverScrollableScrollPhysics(),
-        children: [
-          Column(
-            children: [
-              Expanded(
-                child: ContactSection(
-                  controller: _contact,
-                  formKey: _contactFormKey,
-                  onContinue: _goToFoodTab,
-                  openMapPicker: _openMapPicker,
-                  onEditAccount: _resetContactDetails,
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          appBar: AppBar(
+            title: const Text("Donate"),
+            bottom: TabBar(
+              controller: _tabController,
+              labelColor: const Color(0xFF6E5CD6),
+              unselectedLabelColor: Colors.grey,
+              indicatorColor: const Color(0xFF6E5CD6),
+              onTap: (index) {
+                // Block manual tap to Food tab unless contact is valid
+                if (index == 1 &&
+                    !(_contactFormKey.currentState?.validate() ?? false)) {
+                  _tabController.index = 0;
+                }
+              },
+              tabs: const [
+                Tab(
+                  icon: Icon(Icons.person_outline),
+                  text: "Contact",
                 ),
+                Tab(
+                  icon: Icon(Icons.restaurant_menu),
+                  text: "Food details",
+                ),
+              ],
+            ),
+          ),
+          body: TabBarView(
+            controller: _tabController,
+            physics: const NeverScrollableScrollPhysics(),
+            children: [
+              Column(
+                children: [
+                  Expanded(
+                    child: ContactSection(
+                      controller: _contact,
+                      formKey: _contactFormKey,
+                      onContinue: _goToFoodTab,
+                      openMapPicker: _openMapPicker,
+                      onEditAccount: _resetContactDetails,
+                    ),
+                  ),
+                ],
+              ),
+              FoodSection(
+                food: _food,
+                contact: _contact,
+                pickTime: _pickTime,
+                onSubmit: _submitDonation,
               ),
             ],
           ),
-          FoodSection(
-            food: _food,
-            contact: _contact,
-            pickTime: _pickTime,
-            onSubmit: _submitDonation,
-          ),
-        ],
+        ),
       ),
     );
   }

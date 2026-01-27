@@ -1,26 +1,4 @@
 // lib/features/donor/edit_profile_provider.dart
-// Provider-side Edit Profile page — UI & logic mirror the receiver EditProfilePage.
-//
-// Usage:
-// Navigator.push(
-//   context,
-//   MaterialPageRoute(
-//     builder: (_) => EditProfileProviderPage(
-//       name: currentName,
-//       email: currentEmail,
-//       phone: currentPhone,
-//       address: currentAddress,
-//       photoPath: currentPhotoPath, // optional
-//     ),
-//   ),
-// ).then((result) {
-//   if (result != null && result is Map<String, dynamic>) {
-//     // result contains keys: 'name', 'email', 'phone', 'address', 'photo'
-//     // Apply updates (remember the page will return the new value OR an empty string
-//     // if the user left the field empty — caller can choose to keep old values).
-//   }
-// });
-
 // ignore_for_file: use_super_parameters
 
 import 'dart:io';
@@ -58,16 +36,19 @@ class _EditProfileProviderPageState extends State<EditProfileProviderPage> {
   XFile? _pickedImage;
   final ImagePicker _picker = ImagePicker();
 
+  // 🎨 FINAL BRAND COLORS
+  static const Color primary = Color(0xFF6E5CD6);
+  static const Color softBg = Color(0xFFF7F3FF);
+  static const Color gradientTop = Color(0xFFEDE9FE);
+
   @override
   void initState() {
     super.initState();
-    // Keep controllers empty so we show placeholders (hintText) instead of pre-filled text.
     nameController = TextEditingController();
     emailController = TextEditingController();
     phoneController = TextEditingController();
     addressController = TextEditingController();
 
-    // If caller provided an existing photo path, keep it as preview (but not in the text fields)
     if (widget.photoPath != null && widget.photoPath!.isNotEmpty) {
       _pickedImage = XFile(widget.photoPath!);
     }
@@ -85,16 +66,11 @@ class _EditProfileProviderPageState extends State<EditProfileProviderPage> {
   Future<void> _pickImage() async {
     final picked = await _picker.pickImage(source: ImageSource.gallery);
     if (picked != null) {
-      setState(() {
-        _pickedImage = picked;
-      });
+      setState(() => _pickedImage = picked);
     }
   }
 
   void _saveDetails() {
-    // Return a map similar to the receiver page. Caller can decide whether to replace
-    // old values with these (we mirror the receiver behavior: if controller is empty,
-    // we return the original widget value.)
     Navigator.pop(context, {
       'name': nameController.text.isEmpty
           ? widget.name
@@ -112,7 +88,6 @@ class _EditProfileProviderPageState extends State<EditProfileProviderPage> {
     });
   }
 
-  // Helper to convert a local path to ImageProvider; returns null safely on web or when file missing.
   ImageProvider? _fileImageProvider(String? path) {
     if (path == null || path.isEmpty) return null;
     try {
@@ -125,146 +100,184 @@ class _EditProfileProviderPageState extends State<EditProfileProviderPage> {
     }
   }
 
+  InputDecoration _inputDecoration(String hint) {
+    return InputDecoration(
+      hintText: hint,
+      filled: true,
+      fillColor: Colors.white,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(18),
+        borderSide: BorderSide(color: Colors.grey.shade300),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(18),
+        borderSide: BorderSide(color: Colors.grey.shade300),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(18),
+        borderSide: const BorderSide(color: primary, width: 1.4),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final accent = Colors.black;
-    final inputDecoration = InputDecoration(
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      filled: true,
-      fillColor: Colors.white, // pure white input boxes (same as receiver)
-    );
-
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F7F9),
+      backgroundColor: softBg,
       appBar: AppBar(
-        centerTitle: true,
-        elevation: 0,
         backgroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: true,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
           'Edit Profile',
-          style: TextStyle(
-            color: Colors.black,
-            fontWeight: FontWeight.w700,
-            fontSize: 20,
-          ),
+          style: TextStyle(fontWeight: FontWeight.w700),
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(18),
         child: Column(
           children: [
-            Stack(
-              children: [
-                // avatar — prefer _pickedImage, else try widget.photoPath, else placeholder icon
-                CircleAvatar(
-                  radius: 50,
-                  backgroundColor: Colors.grey.shade300,
-                  backgroundImage: _pickedImage != null
-                      ? (kIsWeb ? null : FileImage(File(_pickedImage!.path)))
-                      : _fileImageProvider(widget.photoPath),
-                  child:
-                      (_pickedImage == null &&
-                          _fileImageProvider(widget.photoPath) == null)
-                      ? const Icon(Icons.person, size: 50, color: Colors.white)
-                      : null,
+            // 🔮 TOP GRADIENT
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.only(bottom: 28),
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    gradientTop,
+                    softBg,
+                  ],
                 ),
-                Positioned(
-                  bottom: 0,
-                  right: 0,
-                  child: InkWell(
-                    onTap: _pickImage,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.black,
-                        shape: BoxShape.circle,
+              ),
+              child: Column(
+                children: [
+                  const SizedBox(height: 18),
+
+                  // 👤 AVATAR
+                  Stack(
+                    alignment: Alignment.bottomRight,
+                    children: [
+                      CircleAvatar(
+                        radius: 64,
+                        backgroundColor: Colors.white,
+                        child: CircleAvatar(
+                          radius: 58,
+                          backgroundColor: Colors.grey.shade300,
+                          backgroundImage: _pickedImage != null
+                              ? (kIsWeb
+                                  ? null
+                                  : FileImage(File(_pickedImage!.path)))
+                              : _fileImageProvider(widget.photoPath),
+                          child: (_pickedImage == null &&
+                                  _fileImageProvider(widget.photoPath) == null)
+                              ? const Icon(
+                                  Icons.person,
+                                  size: 56,
+                                  color: Colors.white,
+                                )
+                              : null,
+                        ),
                       ),
-                      padding: const EdgeInsets.all(8),
-                      child: const Icon(
-                        Icons.camera_alt,
-                        color: Colors.white,
-                        size: 20,
+                      GestureDetector(
+                        onTap: _pickImage,
+                        child: Container(
+                          width: 42,
+                          height: 42,
+                          decoration: BoxDecoration(
+                            color: primary,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 3),
+                            boxShadow: [
+                              BoxShadow(
+                                color: primary.withOpacity(0.4),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: const Icon(
+                            Icons.camera_alt,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            // ✍️ FORM
+            Padding(
+              padding: const EdgeInsets.fromLTRB(18, 8, 18, 30),
+              child: Column(
+                children: [
+                  TextField(
+                    controller: nameController,
+                    decoration: _inputDecoration(
+                      widget.name.isNotEmpty ? widget.name : 'Name',
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: emailController,
+                    keyboardType: TextInputType.emailAddress,
+                    decoration: _inputDecoration(
+                      widget.email.isNotEmpty ? widget.email : 'Email',
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: phoneController,
+                    keyboardType: TextInputType.phone,
+                    decoration: _inputDecoration(
+                      widget.phone.isNotEmpty ? widget.phone : 'Phone number',
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: addressController,
+                    maxLines: 3,
+                    decoration: _inputDecoration(
+                      widget.address.isNotEmpty
+                          ? widget.address
+                          : 'Default Address',
+                    ),
+                  ),
+                  const SizedBox(height: 28),
+
+                  // 💜 SAVE BUTTON
+                  SizedBox(
+                    width: double.infinity,
+                    height: 54,
+                    child: ElevatedButton(
+                      onPressed: _saveDetails,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: primary,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                        elevation: 6,
+                        shadowColor: primary.withOpacity(0.45),
+                      ),
+                      child: const Text(
+                        'Save my details',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 30),
-
-            // Name field: use hintText with existing value (so it's placeholder-like)
-            TextField(
-              controller: nameController,
-              decoration: inputDecoration.copyWith(
-                labelText: 'Name',
-                hintText: widget.name.isNotEmpty ? widget.name : 'Enter name',
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            // Email
-            TextField(
-              controller: emailController,
-              decoration: inputDecoration.copyWith(
-                labelText: 'Email',
-                hintText: widget.email.isNotEmpty
-                    ? widget.email
-                    : 'Enter email',
-              ),
-              keyboardType: TextInputType.emailAddress,
-            ),
-            const SizedBox(height: 20),
-
-            // Phone
-            TextField(
-              controller: phoneController,
-              decoration: inputDecoration.copyWith(
-                labelText: 'Phone number',
-                hintText: widget.phone.isNotEmpty
-                    ? widget.phone
-                    : 'Enter phone number',
-              ),
-              keyboardType: TextInputType.phone,
-            ),
-            const SizedBox(height: 20),
-
-            // Address
-            TextField(
-              controller: addressController,
-              decoration: inputDecoration.copyWith(
-                labelText: 'Default Address',
-                hintText: widget.address.isNotEmpty
-                    ? widget.address
-                    : 'Enter default address',
-              ),
-              maxLines: 3,
-            ),
-            const SizedBox(height: 32),
-
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _saveDetails,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: accent,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text(
-                  'Save my details',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                  ),
-                ),
+                ],
               ),
             ),
           ],

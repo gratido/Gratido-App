@@ -73,7 +73,7 @@ class GratidoApp extends StatelessWidget {
         '/add_donation': (_) => const AddDonationsScreen(),
         '/my_donations': (_) => const MyDonations(),
         '/donor_listing': (_) => DonorListing(),
-        '/donor_interface': (_) => const DonorInterface(),
+        '/donor_interface': (_) => DonorInterface(),
 
         // Receiver wrapper route (uses wrapper to decide Login / Documents / Home)
         '/receiver': (_) => const WrapperClass(),

@@ -2,8 +2,8 @@
 
 import 'dart:io';
 import 'dart:convert';
-import 'package:http/http.dart' as http;
 
+import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -18,18 +18,23 @@ class FeedbackFormPage extends StatefulWidget {
 class _FeedbackFormPageState extends State<FeedbackFormPage> {
   final _messageCtrl = TextEditingController();
   final _contactCtrl = TextEditingController();
-  String _selectedCategory = 'General';
+
+  String? _selectedCategory;
   int _rating = 5;
   bool _sending = false;
+
   List<PlatformFile> _pickedFiles = [];
 
   final List<String> _categories = [
     'General',
     'Bug',
     'Pickup',
-    'Provider',
+    'Service Experience',
     'Other',
   ];
+
+  static const Color primary = Color(0xFF6E5CD6);
+  static const Color bgSoft = Color(0xFFF7F3FF);
 
   @override
   void dispose() {
@@ -38,24 +43,157 @@ class _FeedbackFormPageState extends State<FeedbackFormPage> {
     super.dispose();
   }
 
+  // ---------------- SUCCESS POPUP ----------------
+
+  void _showSuccessPopup() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) {
+        return Center(
+          child: Material(
+            color: Colors.transparent,
+            child: Stack(
+              alignment: Alignment.topCenter,
+              children: [
+                Container(
+                  margin: const EdgeInsets.only(top: 36),
+                  padding: const EdgeInsets.fromLTRB(24, 48, 24, 24),
+                  width: MediaQuery.of(context).size.width * 0.82,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.18),
+                        blurRadius: 30,
+                        offset: const Offset(0, 14),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text(
+                        'Thank you!',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Your feedback helps us improve and serve better.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.black54,
+                        ),
+                      ),
+                      const SizedBox(height: 22),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 46,
+                        child: ElevatedButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: primary,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            elevation: 0,
+                          ),
+                          child: const Text(
+                            'OK',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  width: 72,
+                  height: 72,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: primary,
+                    boxShadow: [
+                      BoxShadow(
+                        color: primary.withOpacity(0.45),
+                        blurRadius: 22,
+                        spreadRadius: 2,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.favorite_rounded,
+                    size: 36,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // ---------------- IMAGE PREVIEW ----------------
+
+  Widget _buildImagePreview() {
+    if (_pickedFiles.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: _pickedFiles.map((file) {
+          return ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: Image(
+              width: 80,
+              height: 80,
+              fit: BoxFit.cover,
+              image: file.bytes != null
+                  ? MemoryImage(file.bytes!)
+                  : FileImage(File(file.path!)) as ImageProvider,
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  // ---------------- SUBMIT ----------------
+
   Future<void> _submit() async {
     setState(() => _sending = true);
 
     try {
-      // 🔥 Upload images to Cloudinary
       final List<Map<String, dynamic>> imageMeta = [];
 
       for (final file in _pickedFiles) {
-        final url = "https://api.cloudinary.com/v1_1/dha5efl8j/image/upload";
-        final req = http.MultipartRequest("POST", Uri.parse(url))
-          ..fields['upload_preset'] = "gratido_feedback";
+        final req = http.MultipartRequest(
+          "POST",
+          Uri.parse("https://api.cloudinary.com/v1_1/dha5efl8j/image/upload"),
+        )..fields['upload_preset'] = "gratido_feedback";
 
         if (file.bytes != null) {
           req.files.add(
-            http.MultipartFile.fromBytes('file', file.bytes!,
-                filename: file.name),
+            http.MultipartFile.fromBytes(
+              'file',
+              file.bytes!,
+              filename: file.name,
+            ),
           );
-        } else if (file.path != null) {
+        } else {
           req.files.add(
             await http.MultipartFile.fromPath('file', file.path!),
           );
@@ -65,11 +203,13 @@ class _FeedbackFormPageState extends State<FeedbackFormPage> {
         final body = json.decode(await res.stream.bytesToString());
 
         if (body["secure_url"] != null) {
-          imageMeta.add({"name": file.name, "url": body["secure_url"]});
+          imageMeta.add({
+            "name": file.name,
+            "url": body["secure_url"],
+          });
         }
       }
 
-      // 🔥 Save feedback in Firestore
       await FirebaseFirestore.instance.collection('donorFeedback').add({
         'category': _selectedCategory,
         'rating': _rating,
@@ -79,33 +219,22 @@ class _FeedbackFormPageState extends State<FeedbackFormPage> {
         'createdAt': FieldValue.serverTimestamp(),
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Thanks — your feedback has been sent!'),
-          backgroundColor: Colors.green.shade600,
-        ),
-      );
+      _showSuccessPopup();
 
       _messageCtrl.clear();
       _contactCtrl.clear();
+
       setState(() {
         _selectedCategory = 'General';
         _rating = 5;
         _pickedFiles = [];
       });
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to send feedback: $e'),
-          backgroundColor: Colors.red.shade600,
-        ),
-      );
     } finally {
       if (mounted) setState(() => _sending = false);
     }
   }
 
-  // (UI below is unchanged)
+  // ---------------- CATEGORY ----------------
 
   Widget _buildCategoryChips() {
     return Wrap(
@@ -117,69 +246,74 @@ class _FeedbackFormPageState extends State<FeedbackFormPage> {
           label: Text(
             c,
             style: TextStyle(
-              fontSize: 14,
               fontWeight: FontWeight.w600,
               color: isSelected ? Colors.white : Colors.black87,
             ),
           ),
           selected: isSelected,
+          selectedColor: primary,
+          checkmarkColor: Colors.white, // ✅ WHITE TICK
           onSelected: (_) => setState(() => _selectedCategory = c),
-          selectedColor: const Color(0xFF6A4CFF),
-          backgroundColor: Colors.grey.shade100,
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         );
       }).toList(),
     );
   }
+
+  // ---------------- RATING (EMOJIS) ----------------
 
   Widget _buildRatingRow() {
     final emojis = ['😞', '😕', '👍', '👌', '🔥'];
     final labels = ['Bad', 'Poor', 'Okay', 'Good', 'Great'];
 
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: List.generate(5, (i) {
         final idx = i + 1;
         final selected = idx == _rating;
-        return InkWell(
-          onTap: () => setState(() => _rating = idx),
-          borderRadius: BorderRadius.circular(12),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
-            curve: Curves.easeOut,
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: selected ? const Color(0xFFF3EFFF) : Colors.white,
+
+        return Expanded(
+          child: Padding(
+            padding: EdgeInsets.only(right: i == 4 ? 0 : 8),
+            child: InkWell(
+              onTap: () => setState(() => _rating = idx),
               borderRadius: BorderRadius.circular(12),
-              boxShadow: selected
-                  ? [
-                      BoxShadow(
-                        color: const Color(0xFF6A4CFF).withOpacity(0.25),
-                        blurRadius: 12,
-                        offset: const Offset(0, 5),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 220),
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                decoration: BoxDecoration(
+                  color: selected ? const Color(0xFFF1EDFF) : Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: selected
+                      ? [
+                          BoxShadow(
+                            color: const Color.fromARGB(255, 120, 97, 248)
+                                .withOpacity(0.75),
+                            blurRadius: 14,
+                            offset: const Offset(0, 6),
+                          ),
+                        ]
+                      : [],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      emojis[i],
+                      style: const TextStyle(fontSize: 22), // reduced
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      labels[i],
+                      style: TextStyle(
+                        fontSize: 11, // reduced
+                        fontWeight: FontWeight.w700,
+                        color: selected
+                            ? const Color.fromARGB(255, 108, 85, 243)
+                            : Colors.black54,
                       ),
-                    ]
-                  : [],
-            ),
-            child: Column(
-              children: [
-                AnimatedScale(
-                  scale: selected ? 1.4 : 1.1,
-                  duration: const Duration(milliseconds: 180),
-                  child: Text(emojis[i], style: const TextStyle(fontSize: 26)),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 3),
-                Text(
-                  labels[i],
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                    color: selected
-                        ? const Color(0xFF6A4CFF)
-                        : Colors.grey.shade600,
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
         );
@@ -187,267 +321,160 @@ class _FeedbackFormPageState extends State<FeedbackFormPage> {
     );
   }
 
+  // ---------------- PICK IMAGES ----------------
+
   Future<void> _pickImages() async {
-    try {
-      final result = await FilePicker.platform.pickFiles(
-        allowMultiple: true,
-        type: FileType.image,
-      );
+    final result = await FilePicker.platform.pickFiles(
+      allowMultiple: true,
+      type: FileType.image,
+    );
 
-      if (result == null || result.files.isEmpty) return;
-
+    if (result != null) {
       setState(() => _pickedFiles = result.files);
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('${_pickedFiles.length} image(s) attached'),
-        ),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to pick images: $e'),
-          backgroundColor: Colors.red.shade600,
-        ),
-      );
     }
   }
 
+  // ---------------- BUILD ----------------
+
   @override
   Widget build(BuildContext context) {
-    const accent = Color(0xFF6A4CFF);
+    final bool canSend = _messageCtrl.text.trim().isNotEmpty && !_sending;
 
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: bgSoft,
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0.6,
+        title: const Text('Share feedback',
+            style: TextStyle(fontWeight: FontWeight.bold)),
         centerTitle: true,
-        title: const Text(
-          'Share feedback',
-          style: TextStyle(color: Colors.black87, fontWeight: FontWeight.w700),
-        ),
-        iconTheme: const IconThemeData(color: Colors.black87),
+        backgroundColor: Colors.white,
+        elevation: 0,
       ),
-      body: SafeArea(
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFFE8E3FF),
+              Color(0xFFF7F3FF),
+            ],
+          ),
+        ),
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(16, 18, 16, 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // (UI same)
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 14,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.03),
-                      blurRadius: 12,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
-                ),
-                child: const Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Send us feedback',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    SizedBox(height: 6),
-                    Text(
-                      'Tell us what went well or how we can improve. Your feedback helps us make the app better.',
-                      style: TextStyle(color: Colors.black54, height: 1.35),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 14),
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 6),
-                child: Text(
-                  'Category',
-                  style: TextStyle(fontWeight: FontWeight.w700),
-                ),
-              ),
-              _buildCategoryChips(),
-              const SizedBox(height: 14),
-
-              const Text(
-                'Rate your experience',
-                style: TextStyle(fontWeight: FontWeight.w700),
-              ),
+              _infoCard(),
+              const SizedBox(height: 16),
+              const Text('Category',
+                  style: TextStyle(fontWeight: FontWeight.w700)),
               const SizedBox(height: 8),
-              _buildRatingRow(),
+              _buildCategoryChips(),
+              const SizedBox(height: 16),
+              const Text('Rate your experience',
+                  style: TextStyle(fontWeight: FontWeight.w700)),
               const SizedBox(height: 10),
-
+              _buildRatingRow(),
+              const SizedBox(height: 14),
               Container(
+                padding: const EdgeInsets.all(16),
+                constraints: const BoxConstraints(minHeight: 200),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.02),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
+                  borderRadius: BorderRadius.circular(14),
                 ),
-                padding: const EdgeInsets.all(12),
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(
-                    minHeight: 140,
-                    maxHeight: 400,
-                  ),
-                  child: TextField(
-                    controller: _messageCtrl,
-                    maxLines: null,
-                    onChanged: (_) => setState(() {}),
-                    decoration: InputDecoration.collapsed(
-                      hintText:
-                          'Type your message…\n(What happened, where, and when — short and clear helps)',
-                      hintStyle: TextStyle(
-                        color: Colors.grey.shade600,
-                        height: 1.4,
-                      ),
-                    ),
-                    style: const TextStyle(
-                      fontSize: 15,
-                      color: Colors.black87,
-                      height: 1.4,
-                    ),
+                child: TextField(
+                  controller: _messageCtrl,
+                  maxLines: null,
+                  onChanged: (_) => setState(() {}),
+                  decoration: const InputDecoration.collapsed(
+                    hintText: 'Type your message...',
                   ),
                 ),
               ),
-
               const SizedBox(height: 12),
-
               Row(
                 children: [
                   Expanded(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      child: TextField(
-                        controller: _contactCtrl,
-                        decoration: InputDecoration(
-                          border: InputBorder.none,
-                          hintText:
-                              'Optional: your email or phone (so we can follow up)',
-                          hintStyle: TextStyle(color: Colors.grey.shade600),
-                          isDense: true,
+                    child: TextField(
+                      controller: _contactCtrl,
+                      decoration: InputDecoration(
+                        hintText: 'Optional: your email or phone',
+                        filled: true,
+                        fillColor: Colors.white,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide.none,
                         ),
-                        keyboardType: TextInputType.emailAddress,
                       ),
                     ),
                   ),
                   const SizedBox(width: 10),
-                  InkWell(
-                    onTap: _pickImages,
-                    borderRadius: BorderRadius.circular(12),
-                    child: Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.02),
-                            blurRadius: 8,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        children: [
-                          Icon(Icons.attach_file, color: Colors.grey.shade700),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Attach',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey.shade700,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                  IconButton(
+                    onPressed: _pickImages,
+                    icon: const Icon(Icons.attach_file),
                   ),
                 ],
               ),
-
-              const SizedBox(height: 18),
-
-              Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: (_sending || _messageCtrl.text.trim().isEmpty)
-                          ? null
-                          : _submit,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: accent,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+              _buildImagePreview(),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: canSend ? _submit : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: canSend ? primary : Colors.grey.shade300,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  child: _sending
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : const Text(
+                          'Send feedback',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
                         ),
-                        elevation: _sending ? 0 : 6,
-                      ),
-                      child: _sending
-                          ? const Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                SizedBox(
-                                  width: 16,
-                                  height: 16,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                                SizedBox(width: 12),
-                                Text('Sending...',
-                                    style: TextStyle(color: Colors.white)),
-                              ],
-                            )
-                          : const Text(
-                              'Send feedback',
-                              style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w700),
-                            ),
-                    ),
-                  ),
-                ],
+                ),
               ),
-
-              const SizedBox(height: 18),
-
-              Center(
+              const SizedBox(height: 14),
+              const Center(
                 child: Text(
                   'We read every message and reply when follow-up is needed.',
-                  style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                  style: TextStyle(color: Colors.black54, fontSize: 12),
                 ),
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _infoCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: const Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Send us feedback',
+            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+          ),
+          SizedBox(height: 6),
+          Text(
+            'Tell us what went well or how we can improve. Your feedback helps us make the app better.',
+            style: TextStyle(color: Colors.black54),
+          ),
+        ],
       ),
     );
   }

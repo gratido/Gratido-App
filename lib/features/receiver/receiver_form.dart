@@ -161,8 +161,7 @@ class _ReceiverFormPageState extends State<ReceiverFormPage>
       MaterialPageRoute(
         builder: (_) => AddressPickerPage(
           initialCenter: _pickedLatLng ?? const LatLng(17.447, 78.548),
-          initialLine1:
-              _pickedAddressLine1 ??
+          initialLine1: _pickedAddressLine1 ??
               '12-1-1/4, Moula Ali Road, Indira Nagar, Malkajgiri',
           initialLine2: _pickedAddressLine2 ?? 'Secunderabad, Telangana, India',
           initialBuilding: _pickedBuildingDetails ?? '',
@@ -260,9 +259,8 @@ class _ReceiverFormPageState extends State<ReceiverFormPage>
                   foregroundColor: kOnPrimary,
                   minimumSize: const Size(double.infinity, 48),
                 ),
-                onPressed: (_basicDetailsValid && _documentsValid)
-                    ? _onSubmit
-                    : null,
+                onPressed:
+                    (_basicDetailsValid && _documentsValid) ? _onSubmit : null,
                 child: const Text('Submit'),
               ),
       ),
@@ -399,9 +397,8 @@ class _ReceiverFormPageState extends State<ReceiverFormPage>
 
   Widget _buildDocuments(List<String> labels) {
     // Heading should change to "Receiver documents" when user has picked a receiver type
-    final heading = (_receiverType != null)
-        ? 'Receiver documents'
-        : 'NGO documents';
+    final heading =
+        (_receiverType != null) ? 'Receiver documents' : 'NGO documents';
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),

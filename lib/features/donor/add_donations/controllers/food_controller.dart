@@ -1,5 +1,6 @@
 // lib/features/donor/add_donations/controllers/food_controller.dart
 // ignore_for_file: annotate_overrides, unnecessary_overrides
+
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -16,6 +17,7 @@ class FoodController with ChangeNotifier {
     'Vegetables',
     'Baked Items',
     'Other Cooked Meals',
+    'Packed Food', // ✅ ADDED (ONLY addition)
   ];
 
   // ---- QUANTITY ----
@@ -128,13 +130,15 @@ class FoodController with ChangeNotifier {
   // =====================================================
   Future<bool> pickImage() async {
     if (photoPaths.length >= maxPhotos) {
-      notifyListeners(); // UI can detect limit reached
+      notifyListeners();
       return false;
     }
+
     final XFile? img = await picker.pickImage(
       source: ImageSource.camera,
       imageQuality: 78,
     );
+
     if (img != null) {
       photoPaths.add(img.path);
       notifyListeners();
@@ -156,17 +160,18 @@ class FoodController with ChangeNotifier {
   }
 
   // =====================================================
-  // VALIDATION
+  // VALIDATION (ONLY LOGIC CHANGE)
   // =====================================================
   bool get isValid {
-    final pickupValid =
-        pickupWindow != null &&
+    final pickupValid = pickupWindow != null &&
         (pickupWindow != 'Other' ||
             (pickupWindowOther != null && pickupWindowOther!.isNotEmpty));
+
     return foodName != null &&
         foodName!.isNotEmpty &&
         category != null &&
-        preparedSelected != null && // required now
+        (category == 'Packed Food' ||
+            preparedSelected != null) && // ✅ ONLY CHANGE
         expiryTime != null &&
         pickupValid &&
         quantity > 0 &&
@@ -192,6 +197,7 @@ class FoodController with ChangeNotifier {
     notifyListeners();
   }
 
+  @override
   void dispose() {
     super.dispose();
   }

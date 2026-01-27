@@ -1,12 +1,4 @@
 // lib/features/donor/donor_listing.dart
-// ignore_for_file: dead_code
-//
-// Minimal update:
-// - Title: Food name (if present) else category.
-// - Second line: "Category: <category>" (placeholder + actual).
-// - Bottom row keeps Qty and pickup/time.
-// - Items shown newest-first (createdAt desc).
-// - Keeps NEW badge and pixel-safe layout.
 
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -24,7 +16,7 @@ class _DonorListingState extends State<DonorListing> {
   @override
   void initState() {
     super.initState();
-    DonationRepo.instance.seedDemo();
+    DonationRepo.instance.seedDemo(); // seeds once
     DonationRepo.instance.addListener(_onRepoChanged);
   }
 
@@ -36,197 +28,233 @@ class _DonorListingState extends State<DonorListing> {
 
   void _onRepoChanged() => setState(() {});
 
-  Widget _buildThumb(String? path) {
-    if (path == null) return _placeholderImage();
+  // ---------- IMAGE ----------
+  Widget _image(String? path) {
+    if (path == null) return Container(color: Colors.grey.shade200);
     if (path.startsWith('assets/')) {
       return Image.asset(path, fit: BoxFit.cover);
     }
     final file = File(path);
-    if (!file.existsSync()) return _placeholderImage();
-    return Image.file(file, fit: BoxFit.cover);
+    return file.existsSync()
+        ? Image.file(file, fit: BoxFit.cover)
+        : Container(color: Colors.grey.shade200);
   }
 
-  Widget _placeholderImage() {
+  // ---------- QTY COLOR CYCLE ----------
+  Color _qtyBg(int index) {
+    const colors = [
+      Color(0xFFE8F1FF),
+      Color(0xFFEAF7EE),
+      Color(0xFFFFF2E5),
+      Color(0xFFEFEAFF),
+    ];
+    return colors[index % 4];
+  }
+
+  Color _qtyFg(int index) {
+    const colors = [
+      Color(0xFF3B6FD8),
+      Color(0xFF2E7D32),
+      Color(0xFFF57C00),
+      Color(0xFF6E5CD6),
+    ];
+    return colors[index % 4];
+  }
+
+  //Helper widget
+  Widget _newBadge() {
     return Container(
-      color: Colors.grey.shade200,
-      child: const Center(
-        child: Icon(Icons.fastfood_outlined, size: 44, color: Colors.grey),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: const Color(0xFF6E5CD6),
+// red NEW tag
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: const Text(
+        'NEW',
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+          letterSpacing: 0.5,
+        ),
       ),
     );
   }
 
-  bool _isNewByTime(Donation d) =>
-      DateTime.now().difference(d.createdAt).inHours < 4;
-
   @override
   Widget build(BuildContext context) {
-    // copy and sort newest-first by createdAt
     final items = DonationRepo.instance.items.toList()
       ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Donation Listings"),
+        title: const Text(
+          "Donation Listings",
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
+        foregroundColor: Colors.black,
         elevation: 1,
       ),
-      body: items.isEmpty
-          ? const Center(child: Text("No listings yet."))
-          : Padding(
-              padding: const EdgeInsets.all(12),
-              child: GridView.builder(
-                itemCount: items.length,
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  mainAxisSpacing: 12,
-                  crossAxisSpacing: 12,
-                  childAspectRatio: 0.82,
-                ),
-                itemBuilder: (context, index) {
-                  final d = items[index];
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFFF3E8FF),
+              Color(0xFFF9FAFB),
+            ],
+          ),
+        ),
+        padding: const EdgeInsets.all(12),
+        child: GridView.builder(
+          itemCount: items.length,
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            crossAxisSpacing: 16,
+            mainAxisSpacing: 16,
+            mainAxisExtent: 215, // 🔒 unchanged
+          ),
+          itemBuilder: (context, index) {
+            final d = items[index];
 
-                  // topTitle: Food name if present else category (both trimmed)
-                  final String topTitle =
-                      (d.foodName?.trim().isNotEmpty ?? false)
-                          ? d.foodName!.trim()
-                          : d.category.trim();
+            final title = (d.foodName != null && d.foodName!.trim().isNotEmpty)
+                ? d.foodName!
+                : d.category;
 
-                  // Category line (placeholder + selected category)
-                  final String categoryLine = 'Category: ${d.category.trim()}';
+            final imagePath =
+                d.photoPaths.isNotEmpty ? d.photoPaths.first : null;
 
-                  return GestureDetector(
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => DonationDetail(donation: d),
-                      ),
+            return GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => DonationDetail(donation: d),
+                  ),
+                );
+              },
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF7C3AED).withOpacity(0.25),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
                     ),
-                    child: Material(
-                      elevation: 2,
-                      borderRadius: BorderRadius.circular(12),
-                      clipBehavior: Clip.hardEdge,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // IMAGE
+                    Padding(
+                      padding: const EdgeInsets.all(8),
+                      child: Stack(
                         children: [
-                          // IMAGE AREA
-                          Expanded(
-                            flex: 6,
-                            child: Stack(
-                              children: [
-                                SizedBox.expand(
-                                  child: _buildThumb(
-                                    d.photoPaths.isNotEmpty
-                                        ? d.photoPaths.first
-                                        : null,
-                                  ),
-                                ),
-                                if (_isNewByTime(d))
-                                  Positioned(
-                                    top: 8,
-                                    left: 8,
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                        vertical: 4,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: Colors.deepPurple,
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: const Text(
-                                        "NEW",
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                              ],
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(16),
+                            child: SizedBox(
+                              height: 100,
+                              width: double.infinity,
+                              child: _image(imagePath),
                             ),
                           ),
 
-                          // TEXT AREA
-                          Expanded(
-                            flex: 4,
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 8,
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  // FOOD NAME (main title)
-                                  Text(
-                                    topTitle,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w700,
+                          // ✅ NEW TAG — only for latest donation
+                          if (index == 0)
+                            Positioned(
+                              top: 8,
+                              right: 8,
+                              child: _newBadge(),
+                            ),
+                        ],
+                      ),
+                    ),
+
+                    // TEXT
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(14, 4, 14, 10),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Category: ${d.category}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 10,
+                              color: Colors.black38,
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+
+                          // ✅ FIXED, COMPACT BOTTOM ROW
+                          SizedBox(
+                            height: 22,
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 3,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: _qtyBg(index),
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Text(
+                                    'Qty: ${d.quantity}',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: _qtyFg(index),
+                                      height: 1.1,
                                     ),
                                   ),
-                                  const SizedBox(height: 6),
-
-                                  // CATEGORY placeholder + selected category
-                                  Text(
-                                    categoryLine,
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    d.pickupWindow,
                                     maxLines: 1,
+                                    softWrap: false,
                                     overflow: TextOverflow.ellipsis,
+                                    textAlign: TextAlign.right,
                                     style: const TextStyle(
-                                        fontSize: 12, color: Colors.black54),
+                                      fontSize: 10,
+                                      height: 1.1,
+                                      color: Colors.black45,
+                                    ),
                                   ),
-
-                                  const Spacer(),
-
-                                  // BOTTOM ROW: Qty (left) and pickup/time (right)
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: Text(
-                                          "Qty: ${d.quantity}",
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: const TextStyle(
-                                            fontSize: 12,
-                                            color: Colors.grey,
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 6),
-                                      Expanded(
-                                        child: Text(
-                                          d.pickupWindow == 'Other' &&
-                                                  (d.pickupWindowOther
-                                                          ?.isNotEmpty ??
-                                                      false)
-                                              ? d.pickupWindowOther!
-                                              : (d.pickupWindow),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          textAlign: TextAlign.right,
-                                          style: const TextStyle(
-                                            fontSize: 12,
-                                            color: Colors.grey,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
                       ),
                     ),
-                  );
-                },
+                  ],
+                ),
               ),
-            ),
+            );
+          },
+        ),
+      ),
     );
   }
 }

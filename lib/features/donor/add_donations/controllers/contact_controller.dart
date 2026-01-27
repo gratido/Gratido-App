@@ -15,8 +15,7 @@ class ContactController {
         prefs.getString('donor_name') ?? prefs.getString('donorName') ?? '';
     phoneController.text =
         prefs.getString('donor_phone') ?? prefs.getString('donorPhone') ?? '';
-    pickupController.text =
-        prefs.getString('donor_address') ??
+    pickupController.text = prefs.getString('donor_address') ??
         prefs.getString('pickupLocation') ??
         '';
   }

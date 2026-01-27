@@ -8,10 +8,12 @@ import '../controllers/food_controller.dart';
 const Color kPrimary = Color(0xFF6A4CFF);
 
 BoxDecoration _boxDecoration() => BoxDecoration(
-  color: Colors.white,
-  borderRadius: BorderRadius.circular(12),
-  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 6)],
-);
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(12),
+      boxShadow: [
+        BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 6)
+      ],
+    );
 
 /// ------------------------------
 /// CONTACT SECTION (unchanged logic, header moved)
@@ -285,10 +287,19 @@ class _FoodSectionState extends State<FoodSection> {
 
             const SizedBox(height: 20),
             styledDropdown(
-              label: "Category (required)",
+              label: "Category",
               value: food.category,
               items: food.categories,
-              onChanged: food.setCategory,
+              onChanged: (v) {
+                food.setCategory(v);
+
+                // ✅ CRITICAL FIX
+                if (v == 'Packed Food') {
+                  food.setPrepared(null); // clear any previously selected time
+                }
+
+                setState(() {});
+              },
             ),
 
             const SizedBox(height: 20),
@@ -485,9 +496,8 @@ class _FoodSectionState extends State<FoodSection> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: food.isValid
-                    ? () async => await widget.onSubmit()
-                    : null,
+                onPressed:
+                    food.isValid ? () async => await widget.onSubmit() : null,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: food.isValid ? kPrimary : Colors.grey,
                   foregroundColor: Colors.white,
@@ -575,9 +585,8 @@ class _FoodSectionState extends State<FoodSection> {
           height: 100,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
-            itemCount: (food.photoPaths.isEmpty
-                ? 1
-                : food.photoPaths.length + 1),
+            itemCount:
+                (food.photoPaths.isEmpty ? 1 : food.photoPaths.length + 1),
             separatorBuilder: (_, __) => const SizedBox(width: 8),
             itemBuilder: (c, i) {
               if (food.photoPaths.isEmpty) return _addPhotoTile();
@@ -684,40 +693,49 @@ class _FoodSectionState extends State<FoodSection> {
   }
 
   // Prepared time segmented buttons
+  // Prepared time segmented buttons
   Widget _preparedButtons(FoodController food) {
     final options = food.preparedOptions;
+    final bool isPackedFood = food.category == 'Packed Food';
+
     return Wrap(
       spacing: 8,
       runSpacing: 8,
       children: options.map((opt) {
         final selected = food.preparedSelected == opt;
+
         return GestureDetector(
-          onTap: () {
-            food.setPrepared(opt);
-            setState(() {});
-          },
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            decoration: BoxDecoration(
-              color: selected ? kPrimary : Colors.white,
-              border: Border.all(
-                color: selected ? kPrimary : Colors.grey.shade300,
+          onTap: isPackedFood
+              ? null // ✅ DISABLED for Packed Food
+              : () {
+                  food.setPrepared(opt);
+                  setState(() {});
+                },
+          child: Opacity(
+            opacity: isPackedFood ? 0.45 : 1.0, // ✅ visual hint only
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: selected ? kPrimary : Colors.white,
+                border: Border.all(
+                  color: selected ? kPrimary : Colors.grey.shade300,
+                ),
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  if (selected)
+                    BoxShadow(
+                      color: kPrimary.withOpacity(0.18),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                ],
               ),
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                if (selected)
-                  BoxShadow(
-                    color: kPrimary.withOpacity(0.18),
-                    blurRadius: 8,
-                    offset: const Offset(0, 4),
-                  ),
-              ],
-            ),
-            child: Text(
-              opt,
-              style: TextStyle(
-                color: selected ? Colors.white : Colors.black87,
-                fontWeight: FontWeight.w600,
+              child: Text(
+                opt,
+                style: TextStyle(
+                  color: selected ? Colors.white : Colors.black87,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ),
