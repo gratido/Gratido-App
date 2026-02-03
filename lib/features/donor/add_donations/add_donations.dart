@@ -29,14 +29,23 @@ class _AddDonationsScreenState extends State<AddDonationsScreen>
 
     // Block tapping “Food details” unless contact is valid
     _tabController.addListener(() {
-      if (_tabController.index == 1 &&
-          !(_contactFormKey.currentState?.validate() ?? false)) {
-        // prevent switching — do NOT show snackbar (validation shown inline)
-        _tabController.index = 0;
+      if (_tabController.index == 1) {
+        final formValid = _contactFormKey.currentState?.validate() ?? false;
+        final pickupValid = _contact.pickupController.text.trim().isNotEmpty;
+
+        if (!formValid || !pickupValid) {
+          _tabController.index = 0;
+        }
       }
     });
 
     _contact.loadSavedContact(); // autofill if saved
+  }
+
+  bool _isContactValid() {
+    final formValid = _contactFormKey.currentState?.validate() ?? false;
+    final pickupValid = _contact.pickupController.text.trim().isNotEmpty;
+    return formValid && pickupValid;
   }
 
   @override
@@ -115,12 +124,6 @@ class _AddDonationsScreenState extends State<AddDonationsScreen>
                   onPressed: () {
                     Navigator.of(c).pop();
                   },
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
                   child: const Text('OK'),
                 ),
               ),
@@ -141,10 +144,8 @@ class _AddDonationsScreenState extends State<AddDonationsScreen>
   }
 
   void _goToFoodTab() {
-    if (_contactFormKey.currentState?.validate() ?? false) {
+    if (_isContactValid()) {
       _tabController.animateTo(1);
-    } else {
-      // no snackbars — inline validators are visible
     }
   }
 
@@ -190,9 +191,7 @@ class _AddDonationsScreenState extends State<AddDonationsScreen>
               unselectedLabelColor: Colors.grey,
               indicatorColor: const Color(0xFF6E5CD6),
               onTap: (index) {
-                // Block manual tap to Food tab unless contact is valid
-                if (index == 1 &&
-                    !(_contactFormKey.currentState?.validate() ?? false)) {
+                if (index == 1 && !_isContactValid()) {
                   _tabController.index = 0;
                 }
               },

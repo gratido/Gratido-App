@@ -16,8 +16,8 @@ class FoodController with ChangeNotifier {
     'Fruits',
     'Vegetables',
     'Baked Items',
-    'Other Cooked Meals',
-    'Packed Food', // ✅ ADDED (ONLY addition)
+    'Others',
+    'Packed Food',
   ];
 
   // ---- QUANTITY ----

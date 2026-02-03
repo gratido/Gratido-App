@@ -1,4 +1,4 @@
-// ignore_for_file: use_super_parameters, deprecated_member_use
+// ignore_for_file: use_super_parameters, deprecated_member_use, use_build_context_synchronously
 
 import 'dart:io';
 
@@ -11,6 +11,7 @@ import 'package:gratido_sample/features/selection_interface/selection.dart';
 
 // ---------- PAGES ----------
 import 'pages/about_page.dart';
+import 'pages/receiver_notifications_page.dart';
 import 'pages/edit_profile_page.dart';
 import 'pages/feedback_form.dart';
 import 'pages/faq_page.dart';
@@ -41,21 +42,36 @@ class _ReceiverProfilePageState extends State<ReceiverProfilePage> {
         elevation: 0,
         backgroundColor: Colors.white,
         centerTitle: true,
+
+        // ✅ ensures back + notification icons stay visible
+        iconTheme: const IconThemeData(color: Colors.black),
+
+        // ✅ Material 2 + Material 3 safe (this is the key)
+        titleTextStyle: const TextStyle(
+          color: Color.fromARGB(255, 78, 62, 171), // primary purple
+          fontSize: 20,
+          //fontStyle: FontStyle.italic,
+          fontWeight: FontWeight.w900,
+        ),
+
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.of(context).maybePop(),
         ),
-        title: const Text(
-          'Gratido',
-          style: TextStyle(
-            fontWeight: FontWeight.w700,
-            color: Colors.black87,
-          ),
-        ),
+
+        title: const Text('Gratido'),
+
         actions: [
           IconButton(
-            icon: const Icon(Icons.notifications_none, color: Colors.black),
-            onPressed: () {},
+            icon: const Icon(Icons.notifications_none),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const ReceiverNotificationsPage(),
+                ),
+              );
+            },
           ),
         ],
       ),

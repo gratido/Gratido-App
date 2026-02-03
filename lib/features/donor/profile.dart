@@ -96,14 +96,25 @@ class _ProfileState extends State<Profile> {
         elevation: 0,
         backgroundColor: Colors.white,
         centerTitle: true,
+
+        // ✅ ensures icons (back + notification) are visible
+        iconTheme: const IconThemeData(color: Colors.black),
+
+        // ✅ THIS is the key line (Material 3 safe)
+        titleTextStyle: const TextStyle(
+          color: Color.fromARGB(255, 78, 62, 171), // primary purple
+          fontSize: 20,
+          //fontStyle: FontStyle.italic,
+          fontWeight: FontWeight.w900,
+        ),
+
         leading: IconButton(
-          icon: const Icon(Icons.chevron_left, color: Colors.black),
+          icon: const Icon(Icons.chevron_left),
           onPressed: () => Navigator.of(context).maybePop(),
         ),
-        title: const Text(
-          'Gratido',
-          style: TextStyle(fontWeight: FontWeight.w700),
-        ),
+
+        title: const Text('Gratido'),
+
         actions: [
           IconButton(
             icon: const Icon(Icons.notifications_none),

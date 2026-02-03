@@ -2,6 +2,7 @@
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:flutter/services.dart'; // ✅ Added for Clipboard functionality
 
 class FirebaseAuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -13,11 +14,25 @@ class FirebaseAuthService {
 
   Future<void> _ensureGoogleInitialized() async {
     if (!_isGoogleInitialized) {
-      await _googleSignIn.initialize(
-          // If you ever need extra scopes or serverClientId, pass them here.
-          // scopes: <String>['email'],
-          );
+      await _googleSignIn.initialize();
       _isGoogleInitialized = true;
+    }
+  }
+
+  // ✅ Helper method to get token and copy to clipboard without breaking logic
+  Future<void> _handleToken(User? user) async {
+    if (user != null) {
+      final idToken = await user.getIdToken(true);
+      if (idToken != null) {
+        // Copy to clipboard so you can paste directly into Postman
+        await Clipboard.setData(ClipboardData(text: idToken));
+
+        print("-----------------------------------------");
+        print("✅ AUTH SUCCESS!");
+        print("TOKEN COPIED TO CLIPBOARD.");
+        print("Paste it into Postman now (Ctrl + V).");
+        print("-----------------------------------------");
+      }
     }
   }
 
@@ -29,6 +44,10 @@ class FirebaseAuthService {
         email: email,
         password: password,
       );
+
+      // Handle token for Postman
+      await _handleToken(userCredential.user);
+
       return userCredential.user;
     } on FirebaseAuthException catch (e) {
       print('Signup error [${e.code}]: ${e.message}');
@@ -47,6 +66,10 @@ class FirebaseAuthService {
         email: email,
         password: password,
       );
+
+      // Handle token for Postman
+      await _handleToken(userCredential.user);
+
       return userCredential.user;
     } on FirebaseAuthException catch (e) {
       print('Login error [${e.code}]: ${e.message}');
@@ -63,13 +86,11 @@ class FirebaseAuthService {
       // Make sure GoogleSignIn is initialized (required in v7)
       await _ensureGoogleInitialized();
 
-      // v7: use `authenticate()` instead of `signIn()`
+      // v7: use `authenticate()` as in your working code
       final GoogleSignInAccount googleUser = await _googleSignIn.authenticate(
-        // Optional: hint scopes if you need more than basic sign-in
         scopeHint: const <String>['email'],
       );
 
-      // v7: `authentication` is now synchronous, and `accessToken` is gone.
       final GoogleSignInAuthentication googleAuth = googleUser.authentication;
 
       if (googleAuth.idToken == null) {
@@ -79,16 +100,16 @@ class FirebaseAuthService {
 
       final OAuthCredential credential = GoogleAuthProvider.credential(
         idToken: googleAuth.idToken,
-        // accessToken is no longer on GoogleSignInAuthentication in v7.
-        // It is NOT required for Firebase sign-in; idToken is enough.
       );
 
       final UserCredential userCredential =
           await _auth.signInWithCredential(credential);
 
+      // Handle token for Postman
+      await _handleToken(userCredential.user);
+
       return userCredential.user;
     } on GoogleSignInException catch (e) {
-      // Specific Google sign-in error info
       print(
           'Google Sign-In error: code=${e.code.name}, description=${e.description}, details=${e.details}');
       return null;

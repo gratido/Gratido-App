@@ -394,8 +394,10 @@ class _HeroCard extends StatelessWidget {
                   Text(
                     subtitle,
                     style: const TextStyle(
+                      fontStyle: FontStyle.italic,
                       color: Color(0xFFE6DEFF),
-                      fontSize: 14,
+                      height: 1.2,
+                      fontSize: 13,
                     ),
                   ),
                 ],
@@ -534,13 +536,15 @@ class _SwipeCardState extends State<_SwipeCard> {
     required String value,
   }) {
     return Expanded(
-      child: Row(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 18, color: kPrimary),
-          const SizedBox(width: 6),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
+              Icon(icon, size: 16, color: kPrimary),
+              const SizedBox(width: 6),
               Text(
                 label,
                 style: const TextStyle(
@@ -549,15 +553,17 @@ class _SwipeCardState extends State<_SwipeCard> {
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(height: 2),
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
             ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis, // ✅ GUARANTEED safety
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ],
       ),
