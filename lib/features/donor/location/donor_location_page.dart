@@ -7,14 +7,16 @@ import 'package:location/location.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 
-class MapPickerPage extends StatefulWidget {
-  const MapPickerPage({super.key});
+import 'package:gratido_sample/features/donor/donor_interface.dart';
+
+class DonorLocationPage extends StatefulWidget {
+  const DonorLocationPage({super.key});
 
   @override
-  State<MapPickerPage> createState() => _MapPickerPageState();
+  State<DonorLocationPage> createState() => _DonorLocationPageState();
 }
 
-class _MapPickerPageState extends State<MapPickerPage> {
+class _DonorLocationPageState extends State<DonorLocationPage> {
   final MapController _mapController = MapController();
   LatLng? _currentLocation;
   String _addressText = "Fetching location...";
@@ -29,11 +31,6 @@ class _MapPickerPageState extends State<MapPickerPage> {
 
   Future<void> _getCurrentLocation() async {
     final location = Location();
-
-    await location.changeSettings(
-      accuracy: LocationAccuracy.high,
-      distanceFilter: 0,
-    );
 
     bool serviceEnabled = await location.serviceEnabled();
     if (!serviceEnabled) {
@@ -50,7 +47,9 @@ class _MapPickerPageState extends State<MapPickerPage> {
     final data = await location.getLocation();
     final latLng = LatLng(data.latitude!, data.longitude!);
 
-    setState(() => _currentLocation = latLng);
+    setState(() {
+      _currentLocation = latLng;
+    });
 
     _mapController.move(latLng, 16);
     await _fetchAddressFromLatLng(latLng);
@@ -90,8 +89,6 @@ class _MapPickerPageState extends State<MapPickerPage> {
     }
   }
 
-  // ================= UI =================
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -124,7 +121,7 @@ class _MapPickerPageState extends State<MapPickerPage> {
             ],
           ),
 
-          /// 🔍 SEARCH BAR (UI KEPT — NO LOGIC ATTACHED)
+          /// 🔍 SEARCH BAR (UNCHANGED)
           Positioned(
             top: MediaQuery.of(context).padding.top + 16,
             left: 16,
@@ -132,22 +129,21 @@ class _MapPickerPageState extends State<MapPickerPage> {
             child: _searchBar(),
           ),
 
-          /// 📍 MY LOCATION BUTTON (ONLY ONE)
+          /// 📍 RIGHT BUTTON — ONLY MY LOCATION (SECOND REMOVED)
           Positioned(
             right: 16,
             top: MediaQuery.of(context).size.height * 0.4,
             child: _mapButton(Icons.my_location, _getCurrentLocation),
           ),
 
-          /// ⬆️ BOTTOM SHEET
+          /// ⬆️ BOTTOM SHEET (UNCHANGED STRUCTURE)
           _bottomSheet(),
         ],
       ),
     );
   }
 
-  // ================= WIDGETS =================
-
+  /// Avatar marker (UNCHANGED)
   Widget _avatarMarker() {
     return Stack(
       alignment: Alignment.center,
@@ -264,7 +260,7 @@ class _MapPickerPageState extends State<MapPickerPage> {
             ),
             const SizedBox(height: 20),
 
-            /// ✅ CONFIRM — RETURNS VALUE TO CONTACT PAGE
+            /// ✅ CONFIRM BUTTON — COLOR + TEXT FIXED
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF6E5CD6),
@@ -273,7 +269,7 @@ class _MapPickerPageState extends State<MapPickerPage> {
                   borderRadius: BorderRadius.circular(18),
                 ),
               ),
-              onPressed: _confirmAndReturn,
+              onPressed: _saveLocationAndExit,
               child: const Text(
                 "Confirm Location →",
                 style: TextStyle(
@@ -289,9 +285,9 @@ class _MapPickerPageState extends State<MapPickerPage> {
     );
   }
 
-  // ================= CONFIRM =================
+  // ================= SAVE + EXIT =================
 
-  Future<void> _confirmAndReturn() async {
+  Future<void> _saveLocationAndExit() async {
     if (_currentLocation == null) return;
 
     final prefs = await SharedPreferences.getInstance();
@@ -299,6 +295,10 @@ class _MapPickerPageState extends State<MapPickerPage> {
     await prefs.setDouble('donor_lng', _currentLocation!.longitude);
     await prefs.setString('donor_address', _addressText);
 
-    Navigator.pop(context, _addressText);
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const DonorInterface()),
+      (_) => false,
+    );
   }
 }

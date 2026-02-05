@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 class FoodController with ChangeNotifier {
   // ---- FOOD NAME ----
   String? foodName;
+  String? freshness;
 
   // ---- CATEGORY ----
   String? category;
@@ -21,7 +22,7 @@ class FoodController with ChangeNotifier {
   ];
 
   // ---- QUANTITY ----
-  int quantity = 10;
+  int quantity = 0; // start empty-like (placeholder UX)
 
   // ---- PREPARED TIME ----
   final List<String> preparedOptions = [
@@ -61,30 +62,34 @@ class FoodController with ChangeNotifier {
   // =====================================================
   // SETTERS
   // =====================================================
+
   void setFoodName(String v) {
-    foodName = v.trim();
+    foodName = v.trim().isEmpty ? null : v.trim();
     notifyListeners();
   }
 
   void setCategory(String? c) {
     category = c;
-    notifyListeners();
-  }
 
-  void incrementQuantity() {
-    quantity++;
-    notifyListeners();
-  }
-
-  void decrementQuantity() {
-    if (quantity > 1) {
-      quantity--;
-      notifyListeners();
+    if (c == 'Packed Food') {
+      preparedSelected = null;
+      freshness = null;
+    } else if (c == 'Fruits' || c == 'Vegetables') {
+      preparedSelected = null;
+    } else {
+      freshness = null;
     }
+
+    notifyListeners();
+  }
+
+  void setFreshness(String v) {
+    freshness = v;
+    notifyListeners();
   }
 
   void setQuantity(int q) {
-    if (q < 1) q = 1;
+    if (q < 0) q = 0;
     if (q > 100000) q = 100000;
     if (quantity != q) {
       quantity = q;
@@ -125,14 +130,17 @@ class FoodController with ChangeNotifier {
     notifyListeners();
   }
 
+  void setHygiene(bool v) {
+    hygieneConfirmed = v;
+    notifyListeners();
+  }
+
   // =====================================================
-  // IMAGES (MAX 5)
+  // IMAGES
   // =====================================================
+
   Future<bool> pickImage() async {
-    if (photoPaths.length >= maxPhotos) {
-      notifyListeners();
-      return false;
-    }
+    if (photoPaths.length >= maxPhotos) return false;
 
     final XFile? img = await picker.pickImage(
       source: ImageSource.camera,
@@ -154,24 +162,24 @@ class FoodController with ChangeNotifier {
     }
   }
 
-  void setHygiene(bool v) {
-    hygieneConfirmed = v;
-    notifyListeners();
-  }
+  // =====================================================
+  // VALIDATION (SMART LOGIC)
+  // =====================================================
 
-  // =====================================================
-  // VALIDATION (ONLY LOGIC CHANGE)
-  // =====================================================
   bool get isValid {
     final pickupValid = pickupWindow != null &&
         (pickupWindow != 'Other' ||
             (pickupWindowOther != null && pickupWindowOther!.isNotEmpty));
 
+    final bool timeRequirementValid = (category == 'Packed Food') ||
+        (category == 'Fruits' || category == 'Vegetables'
+            ? freshness != null
+            : preparedSelected != null);
+
     return foodName != null &&
         foodName!.isNotEmpty &&
         category != null &&
-        (category == 'Packed Food' ||
-            preparedSelected != null) && // ✅ ONLY CHANGE
+        timeRequirementValid &&
         expiryTime != null &&
         pickupValid &&
         quantity > 0 &&
@@ -182,10 +190,12 @@ class FoodController with ChangeNotifier {
   // =====================================================
   // RESET
   // =====================================================
+
   void reset() {
     foodName = null;
+    freshness = null;
     category = null;
-    quantity = 10;
+    quantity = 0;
     preparedSelected = null;
     expiryTime = null;
     expiryDateObj = null;

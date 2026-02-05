@@ -17,6 +17,7 @@ import 'package:gratido_sample/features/receiver/auth/wrapperclass.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
+
   runApp(const GratidoApp());
 }
 

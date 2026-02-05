@@ -68,69 +68,113 @@ class _AddDonationsScreenState extends State<AddDonationsScreen>
       return;
     }
 
-    // Save contact details
-    await _contact.saveContact();
-
-    // Add donation to repo so it shows in Listing/MyDonations
-    final donation = Donation(
-      donorName: _contact.donorController.text.trim(),
-      phone: "+91 ${_contact.phoneController.text.trim()}",
-      pickupLocation: _contact.pickupController.text.trim(),
-      pickupWindow: _food.pickupWindow == 'Other'
-          ? 'Other'
-          : (_food.pickupWindow ?? 'ASAP'),
-      pickupWindowOther:
-          _food.pickupWindow == 'Other' ? _food.pickupWindowOther : null,
-      category: _food.category ?? 'Cooked Meals',
-      foodName: _food.foodName?.trim(), // <-- NEW: save Food Name
-      quantity: _food.quantity,
-      photoPaths: List<String>.from(_food.photoPaths),
-      hygieneConfirmed: _food.hygieneConfirmed,
-      preparedTime: _food.preparedSelected,
-      expiryTime: _food.expiryTime,
-      notes: _food.notes,
-      isNew: true,
+    DonationRepo.instance.addDonation(
+      Donation(
+        donorName: _contact.donorController.text.trim(),
+        foodName: _food.foodName,
+        phone: _contact.phoneController.text.trim(),
+        pickupLocation: _contact.pickupController.text.trim(),
+        pickupWindow: _food.pickupWindow!,
+        pickupWindowOther: _food.pickupWindowOther,
+        category: _food.category!,
+        quantity: _food.quantity,
+        photoPaths: List.from(_food.photoPaths),
+        hygieneConfirmed: _food.hygieneConfirmed,
+        preparedTime: _food.preparedSelected,
+        expiryTime: _food.expiryTime,
+        notes: _food.notes,
+      ),
     );
 
-    DonationRepo.instance.addDonation(donation);
-
-    // Reset food details but keep contact info
-    _food.reset();
-
-    // Show a small modern dialog; on OK navigate to Donation Listings
     await showDialog(
       context: context,
-      builder: (c) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        insetPadding: const EdgeInsets.symmetric(horizontal: 40),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 18.0, horizontal: 18),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+      barrierColor: Colors.black.withOpacity(0.25),
+      builder: (_) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 28),
+          child: Stack(
+            alignment: Alignment.topCenter,
             children: [
-              const Text(
-                'Donation submitted',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+              Container(
+                margin: const EdgeInsets.only(top: 32),
+                padding: const EdgeInsets.fromLTRB(22, 48, 22, 22),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(32),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF6E5CD6).withOpacity(.28),
+                      blurRadius: 36,
+                      offset: const Offset(0, 16),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const SizedBox(height: 20),
+                    const Text(
+                      "Donation submitted",
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    const Text(
+                      "Your donation has been posted successfully.",
+                      style: TextStyle(
+                        color: Colors.grey,
+                        fontSize: 13,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 22),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF6E5CD6),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(22),
+                          ),
+                          elevation: 6,
+                          shadowColor: const Color(0xFF6E5CD6).withOpacity(.45),
+                        ),
+                        child: const Text(
+                          "OK",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: 8),
-              const Text(
-                'Your donation has been posted successfully.',
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 18),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.of(c).pop();
-                  },
-                  child: const Text('OK'),
+
+              // Floating check icon
+              Container(
+                width: 64,
+                height: 64,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Color(0xFF6E5CD6),
+                ),
+                child: const Icon(
+                  Icons.check,
+                  color: Colors.white,
+                  size: 34,
                 ),
               ),
             ],
           ),
-        ),
-      ),
+        );
+      },
     );
 
     // Navigate to Donation Listings page

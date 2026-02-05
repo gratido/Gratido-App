@@ -274,16 +274,29 @@ class _DonationDetailState extends State<DonationDetail> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
+            flex: 4, // label space
             child: Text(
               label,
-              style: const TextStyle(fontSize: 13, color: Colors.black54),
+              style: const TextStyle(
+                fontSize: 13,
+                color: Colors.black54,
+              ),
             ),
           ),
-          Text(
-            value,
-            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+          Expanded(
+            flex: 6, // value space — pushes content visually right
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+              softWrap: true,
+            ),
           ),
         ],
       ),

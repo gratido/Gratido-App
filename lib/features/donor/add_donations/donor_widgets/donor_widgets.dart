@@ -5,14 +5,14 @@ import 'package:flutter/material.dart';
 import '../controllers/contact_controller.dart';
 import '../controllers/food_controller.dart';
 
-const Color kPrimary = Color(0xFF6A4CFF);
+const Color kPrimary = Color(0xFF6E5CD6);
 
 BoxDecoration _boxDecoration() => BoxDecoration(
       color: Colors.white,
-      borderRadius: BorderRadius.circular(16), // closer to rounded-2xl
+      borderRadius: BorderRadius.circular(16),
       boxShadow: [
         BoxShadow(
-          color: Color(0xFF6E5CD6).withOpacity(0.08),
+          color: Color(0xFF6E5CD6).withOpacity(0.085),
           blurRadius: 12,
           offset: const Offset(0, 4),
         ),
@@ -55,34 +55,6 @@ class ContactSection extends StatelessWidget {
                   Color(0xFFF1EEFF), // stronger lavender tint
                   Color(0xFFFFFFFF),
                 ],
-              ),
-            ),
-          ),
-
-          // Top-right subtle purple glow
-          Positioned(
-            top: -140,
-            right: -140,
-            child: Container(
-              width: 320,
-              height: 320,
-              decoration: BoxDecoration(
-                color: const Color(0xFF6E5CD6).withOpacity(0.12),
-                shape: BoxShape.circle,
-              ),
-            ),
-          ),
-
-          // Left-middle purple glow
-          Positioned(
-            top: 280,
-            left: -180,
-            child: Container(
-              width: 340,
-              height: 340,
-              decoration: BoxDecoration(
-                color: const Color(0xFF6E5CD6).withOpacity(0.08),
-                shape: BoxShape.circle,
               ),
             ),
           ),
@@ -339,101 +311,129 @@ class _FoodSectionState extends State<FoodSection> {
   }
 
   Future<void> _showMaxPhotoDialog() async {
+    FocusScope.of(context).unfocus();
     await showDialog(
       context: context,
       barrierColor: Colors.black.withOpacity(0.4),
-      builder: (_) => Dialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(32),
-        ),
-        insetPadding: const EdgeInsets.symmetric(horizontal: 24),
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Icon section
-              Stack(
-                clipBehavior: Clip.none,
+      builder: (_) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 28),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(28),
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(24, 22, 24, 22),
+              color: Colors.white,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Container(
-                    width: 72,
-                    height: 72,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF6E5CD6).withOpacity(0.08),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.photo_library_outlined,
-                      color: Color(0xFF6E5CD6),
-                      size: 36,
-                    ),
-                  ),
-                  Positioned(
-                    top: -2,
-                    right: -2,
-                    child: Container(
-                      width: 26,
-                      height: 26,
-                      decoration: const BoxDecoration(
-                        color: Colors.red,
-                        shape: BoxShape.circle,
+                  // ICON
+                  Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Container(
+                        width: 64,
+                        height: 64,
+                        decoration: BoxDecoration(
+                          color: kPrimary.withOpacity(.08),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.photo_library_outlined,
+                          size: 32,
+                          color: kPrimary,
+                        ),
                       ),
-                      child: const Icon(
-                        Icons.priority_high,
-                        color: Colors.white,
-                        size: 14,
+                      Positioned(
+                        top: -2,
+                        right: -2,
+                        child: Container(
+                          width: 22,
+                          height: 22,
+                          decoration: const BoxDecoration(
+                            color: Colors.red,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.priority_high,
+                            size: 14,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  const Text(
+                    "Maximum photos reached",
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+
+                  const SizedBox(height: 6),
+
+                  const Text(
+                    "You can upload up to 5 photos only",
+                    style: TextStyle(
+                      color: Colors.grey,
+                      fontSize: 14,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+
+                  const SizedBox(height: 18),
+
+                  SizedBox(
+                    width: double.infinity,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(18),
+                        gradient: const LinearGradient(
+                          colors: [
+                            Color(0xFF7C3AED),
+                            Color(0xFF6E5CD6),
+                          ],
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Color(0xFF6E5CD6).withOpacity(.22),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.transparent,
+                          shadowColor: Colors.transparent,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                        ),
+                        child: const Text(
+                          "OK",
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15,
+                            color: Colors.white,
+                          ),
+                        ),
                       ),
                     ),
                   ),
                 ],
               ),
-
-              const SizedBox(height: 20),
-
-              const Text(
-                "Maximum photos reached",
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                ),
-                textAlign: TextAlign.center,
-              ),
-
-              const SizedBox(height: 8),
-
-              const Text(
-                "You can upload up to 5 photos only",
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey),
-              ),
-
-              const SizedBox(height: 24),
-
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    backgroundColor: const Color(0xFF6E5CD6),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                  ),
-                  child: const Text(
-                    "OK",
-                    style: TextStyle(
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -442,6 +442,72 @@ class _FoodSectionState extends State<FoodSection> {
     if (!added && widget.food.photoPaths.length >= FoodController.maxPhotos) {
       await _showMaxPhotoDialog();
     }
+  }
+
+  Widget _purchaseFreshnessOptions(FoodController food) {
+    const options = ["Today", "Yesterday", "3–4 days ago"];
+
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: options.map((opt) {
+        final selected = food.freshness == opt;
+
+        return GestureDetector(
+          onTap: () {
+            food.setFreshness(opt);
+            setState(() {});
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: selected ? kPrimary : Colors.white,
+              border: Border.all(
+                color: selected ? kPrimary : Colors.grey.shade300,
+              ),
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                if (selected)
+                  BoxShadow(
+                    color: kPrimary.withOpacity(0.18),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+              ],
+            ),
+            child: Text(
+              opt,
+              style: TextStyle(
+                color: selected ? Colors.white : Colors.black87,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+// ------------------------------
+// CARD SECTION WRAPPER
+// ------------------------------
+  Widget _cardSection({required Widget child}) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: child,
+    );
   }
 
   @override
@@ -465,33 +531,47 @@ class _FoodSectionState extends State<FoodSection> {
             const SizedBox(height: 8),
             _styledInputFood(
               controller: _foodNameCtrl,
-              hint: "Type here...",
-              onChanged: food.setFoodName,
+              hint: "Enter the food name",
+              onChanged: (v) {
+                if (v.trim().isEmpty) {
+                  food.setFoodName("");
+                } else {
+                  food.setFoodName(v);
+                }
+              },
             ),
 
-            const SizedBox(height: 20),
+            // REMOVED the explicit outer label and using a single label inside styledDropdown
             styledDropdown(
               label: "Category",
               value: food.category,
               items: food.categories,
               onChanged: (v) {
                 food.setCategory(v);
-
-                // ✅ CRITICAL FIX
-                if (v == 'Packed Food') {
-                  food.setPrepared(null); // clear any previously selected time
-                }
-
                 setState(() {});
               },
             ),
 
+// 👇👇👇 PASTE THIS BLOCK RIGHT HERE 👇👇👇
             const SizedBox(height: 20),
-            _fieldLabel("When was this food prepared?"),
-            const SizedBox(height: 8),
 
-            // Prepared time segmented buttons (purple style)
-            _preparedButtons(food),
+            _cardSection(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (food.category == 'Fruits' ||
+                      food.category == 'Vegetables') ...[
+                    _fieldLabel("When was the item purchased?"),
+                    const SizedBox(height: 12),
+                    _purchaseFreshnessOptions(food),
+                  ] else ...[
+                    _fieldLabel("When was this food prepared?"),
+                    const SizedBox(height: 12),
+                    _preparedButtons(food),
+                  ],
+                ],
+              ),
+            ),
 
             const SizedBox(height: 20),
             _fieldLabel("Food expiry date"),
@@ -610,6 +690,7 @@ class _FoodSectionState extends State<FoodSection> {
 
                 if (picked != null) {
                   food.setExpiryDate(picked);
+                  FocusScope.of(context).unfocus();
                   setState(() {});
                 }
               },
@@ -642,7 +723,7 @@ class _FoodSectionState extends State<FoodSection> {
 
             const SizedBox(height: 20),
 
-            // REMOVED the explicit outer label and using a single label inside styledDropdown
+            const SizedBox(height: 20),
             styledDropdown(
               label: "Preferred pickup window",
               value: food.pickupWindow,
@@ -652,6 +733,7 @@ class _FoodSectionState extends State<FoodSection> {
                 setState(() {});
               },
             ),
+
             const SizedBox(height: 12),
 
             // If "Other" show a time picker row
@@ -694,28 +776,23 @@ class _FoodSectionState extends State<FoodSection> {
             _fieldLabel("Quantity (persons)"),
             const SizedBox(height: 8),
 
-            // Quantity slider (drag), default 10
-            _styledBox(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "${food.quantity} persons",
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                  Slider(
-                    value: food.quantity.toDouble(),
-                    min: 1,
-                    max: 200,
-                    divisions: 199,
-                    label: "${food.quantity}",
-                    activeColor: kPrimary,
-                    onChanged: (v) {
-                      food.setQuantity(v.round());
-                      setState(() {});
-                    },
-                  ),
-                ],
+            Container(
+              decoration: _boxDecoration(),
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: TextField(
+                keyboardType: TextInputType.number,
+                onChanged: (v) {
+                  if (v.trim().isEmpty) {
+                    food.setQuantity(0); // invalidate immediately
+                  } else {
+                    final val = int.tryParse(v);
+                    if (val != null) food.setQuantity(val);
+                  }
+                },
+                decoration: const InputDecoration(
+                  hintText: "Enter number of persons",
+                  border: InputBorder.none,
+                ),
               ),
             ),
 
@@ -849,7 +926,7 @@ class _FoodSectionState extends State<FoodSection> {
         controller: controller,
         onChanged: onChanged,
         decoration: const InputDecoration(
-          hintText: "Type here...",
+          hintText: "Enter the food name",
           border: InputBorder.none,
           contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 14),
         ),
@@ -861,36 +938,107 @@ class _FoodSectionState extends State<FoodSection> {
     required String label,
     required String? value,
     required List<String> items,
-    required void Function(String?) onChanged,
+    required void Function(String) onChanged,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _fieldLabel(label),
         const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10),
-          decoration: _boxDecoration(),
-          child: DropdownButtonFormField<String>(
-            value: value,
-            decoration: const InputDecoration(border: InputBorder.none),
-            hint: Text("Select $label"),
-            items: items
-                .map((c) => DropdownMenuItem(value: c, child: Text(c)))
-                .toList(),
-            onChanged: onChanged,
+        FocusScope(
+          node: FocusScopeNode(), // ← stops keyboard jump
+          child: Builder(
+            builder: (context) {
+              return InkWell(
+                borderRadius: BorderRadius.circular(16),
+                onTap: () async {
+                  FocusManager.instance.primaryFocus
+                      ?.unfocus(); // kill keyboard
+
+                  final RenderBox box = context.findRenderObject() as RenderBox;
+                  final Offset pos = box.localToGlobal(Offset.zero);
+                  final Size size = box.size;
+
+                  final selected = await showMenu<String>(
+                    context: context,
+                    color: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    position: RelativeRect.fromLTRB(
+                      pos.dx,
+                      pos.dy + size.height + 8,
+                      pos.dx + size.width,
+                      0,
+                    ),
+                    items: items.map((item) {
+                      final isSelected = item == value;
+
+                      return PopupMenuItem<String>(
+                        value: item,
+                        height: 54,
+                        padding: EdgeInsets.zero,
+                        child: InkWell(
+                          splashColor: kPrimary.withOpacity(0.08),
+                          highlightColor: kPrimary.withOpacity(0.06),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 18, vertical: 14),
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? const Color(
+                                      0xFFF5F3FF) // light purple background
+                                  : Colors.transparent,
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  item,
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: isSelected
+                                        ? FontWeight.w600
+                                        : FontWeight.w400,
+                                    color:
+                                        isSelected ? kPrimary : Colors.black87,
+                                  ),
+                                ),
+                                if (isSelected)
+                                  const Icon(Icons.check,
+                                      size: 18, color: kPrimary),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  );
+
+                  if (selected != null) onChanged(selected);
+                },
+                child: Container(
+                  width: double.infinity,
+                  decoration: _boxDecoration(),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        value ?? "Select $label",
+                        style: const TextStyle(fontSize: 16),
+                      ),
+                      const Icon(Icons.expand_more, color: kPrimary),
+                    ],
+                  ),
+                ),
+              );
+            },
           ),
         ),
       ],
-    );
-  }
-
-  Widget _styledBox({required Widget child}) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
-      decoration: _boxDecoration(),
-      child: child,
     );
   }
 
@@ -905,8 +1053,12 @@ class _FoodSectionState extends State<FoodSection> {
             itemCount: food.photoPaths.length + 1,
             separatorBuilder: (_, __) => const SizedBox(width: 8),
             itemBuilder: (c, i) {
-              if (food.photoPaths.isEmpty) return _addPhotoTile();
+              if (i == food.photoPaths.length) {
+                return _addPhotoTile();
+              }
+
               final path = food.photoPaths[i];
+
               Widget img;
               if (path.startsWith('assets/')) {
                 img = Image.asset(path, fit: BoxFit.cover);
@@ -936,7 +1088,10 @@ class _FoodSectionState extends State<FoodSection> {
                     top: 6,
                     right: 6,
                     child: GestureDetector(
-                      onTap: () => food.removeImage(i),
+                      onTap: () {
+                        food.removeImage(i);
+                        setState(() {});
+                      },
                       child: Container(
                         padding: const EdgeInsets.all(6),
                         decoration: BoxDecoration(
@@ -1011,51 +1166,63 @@ class _FoodSectionState extends State<FoodSection> {
   // Prepared time segmented buttons
   Widget _preparedButtons(FoodController food) {
     final options = food.preparedOptions;
+
+    // 🔒 Disable when Packed Food selected
     final bool isPackedFood = food.category == 'Packed Food';
 
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: options.map((opt) {
-        final selected = food.preparedSelected == opt;
-
-        return GestureDetector(
-          onTap: isPackedFood
-              ? null // ✅ DISABLED for Packed Food
-              : () {
-                  food.setPrepared(opt);
-                  setState(() {});
-                },
-          child: Opacity(
-            opacity: isPackedFood ? 0.45 : 1.0, // ✅ visual hint only
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              decoration: BoxDecoration(
-                color: selected ? kPrimary : Colors.white,
-                border: Border.all(
-                  color: selected ? kPrimary : Colors.grey.shade300,
-                ),
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  if (selected)
-                    BoxShadow(
-                      color: kPrimary.withOpacity(0.18),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
-                    ),
-                ],
-              ),
-              child: Text(
-                opt,
-                style: TextStyle(
-                  color: selected ? Colors.white : Colors.black87,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
+    return IgnorePointer(
+      ignoring: isPackedFood, // blocks taps
+      child: Opacity(
+        opacity: isPackedFood ? 0.45 : 1.0, // visual disabled effect
+        child: GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: options.length,
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2, // always 2 in a row
+            mainAxisSpacing: 12,
+            crossAxisSpacing: 12,
+            childAspectRatio: 2.8,
           ),
-        );
-      }).toList(),
+          itemBuilder: (_, i) {
+            final opt = options[i];
+            final selected = food.preparedSelected == opt;
+
+            return GestureDetector(
+              onTap: () {
+                FocusScope.of(context).unfocus();
+                food.setPrepared(opt);
+                setState(() {});
+              },
+              child: Container(
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: selected ? kPrimary : Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: Colors.grey.shade300),
+                  boxShadow: selected
+                      ? [
+                          BoxShadow(
+                            color: kPrimary.withOpacity(.25),
+                            blurRadius: 12,
+                            offset: const Offset(0, 6),
+                          )
+                        ]
+                      : [],
+                ),
+                child: Text(
+                  opt,
+                  style: TextStyle(
+                    fontSize: 14, // tighter fit like you wanted
+                    color: selected ? Colors.white : Colors.black,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
     );
   }
 }

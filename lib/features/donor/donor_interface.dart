@@ -49,6 +49,7 @@ class _DonorInterfaceState extends State<DonorInterface> {
   int _selectedIndex = 0;
   int _heroIndex = 0;
   String _myName = '';
+  String _locationText = 'Fetching location...';
 
   late final PageController _heroController;
   Timer? _heroTimer;
@@ -64,9 +65,21 @@ class _DonorInterfaceState extends State<DonorInterface> {
     super.initState();
     _heroController = PageController();
     _loadDonorName();
+    _loadLocation(); // ✅ ADD THIS LINE
     DonationRepo.instance.seedDemo();
     DonationRepo.instance.addListener(_onRepoChanged);
     _startHeroAutoFade();
+  }
+
+  Future<void> _loadLocation() async {
+    final prefs = await SharedPreferences.getInstance();
+    final address = prefs.getString('donor_address');
+
+    if (address != null && address.isNotEmpty) {
+      setState(() {
+        _locationText = address;
+      });
+    }
   }
 
   void _startHeroAutoFade() {
@@ -163,38 +176,47 @@ class _DonorInterfaceState extends State<DonorInterface> {
       backgroundColor: kBg,
       body: Stack(
         children: [
-          // BACKGROUND GRADIENT (slightly stronger)
+          // BACKGROUND GRADIENT — Zepto style
           Container(
-            height: 240,
+            height: 180,
             decoration: const BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  Color(0xE6E6DFFF),
-                  Color(0x66E6DFFF),
-                  Color(0x00E6DFFF),
+                  Color(0xFFDCD6FF), // darker top (location emphasis)
+                  Color(0xFFEDE9FF),
+                  Color(0xFFF7F5FB), // blends into page background
                 ],
               ),
             ),
           ),
 
           ListView(
-            padding: const EdgeInsets.only(top: 48, bottom: 80),
+            padding: EdgeInsets.only(
+              top: MediaQuery.of(context).padding.top + 16,
+              bottom: 80,
+            ),
             children: [
               // LOCATION
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Row(
                   children: [
-                    const Icon(Icons.location_on, color: kLavender),
+                    const Icon(Icons.location_on, color: kLavender, size: 20),
                     const SizedBox(width: 6),
-                    const Text(
-                      "Hyderabad, India",
-                      style:
-                          TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    Expanded(
+                      child: Text(
+                        _locationText,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
+                        ),
+                      ),
                     ),
-                    const Spacer(),
                     IconButton(
                       icon: const Icon(Icons.notifications_none),
                       onPressed: () {
@@ -207,25 +229,6 @@ class _DonorInterfaceState extends State<DonorInterface> {
                       },
                     ),
                   ],
-                ),
-              ),
-
-              const SizedBox(height: 12),
-
-              // SEARCH
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: TextField(
-                  decoration: InputDecoration(
-                    hintText: "Find food requests, shelters...",
-                    prefixIcon: const Icon(Icons.search),
-                    filled: true,
-                    fillColor: Colors.white,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(22),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
                 ),
               ),
 

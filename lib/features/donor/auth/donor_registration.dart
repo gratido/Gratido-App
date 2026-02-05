@@ -5,18 +5,19 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
-import '../auth/firebase_auth_service.dart';
-import 'package:gratido_sample/features/receiver/receiver_form.dart';
-import 'receiver_loginpage.dart';
+import '../../receiver/auth/firebase_auth_service.dart';
+import '../donor_interface.dart';
+import 'donor_loginpage.dart';
+import 'package:gratido_sample/features/donor/location/donor_location_page.dart';
 
-class ReceiverRegistration extends StatefulWidget {
-  const ReceiverRegistration({super.key});
+class DonorRegistration extends StatefulWidget {
+  const DonorRegistration({super.key});
 
   @override
-  State<ReceiverRegistration> createState() => _ReceiverRegistrationState();
+  State<DonorRegistration> createState() => _DonorRegistrationState();
 }
 
-class _ReceiverRegistrationState extends State<ReceiverRegistration> {
+class _DonorRegistrationState extends State<DonorRegistration> {
   final FirebaseAuthService _auth = FirebaseAuthService();
 
   final TextEditingController fname = TextEditingController();
@@ -67,8 +68,8 @@ class _ReceiverRegistrationState extends State<ReceiverRegistration> {
     );
   }
 
-  // 🔥 ADDED: Backend role registration (SAFE, ONE-TIME)
-  Future<void> _registerReceiverWithBackend(String token) async {
+  // 🔥 ONE-TIME backend role registration (DONOR)
+  Future<void> _registerDonorWithBackend(String token) async {
     const String backendUrl = 'https://192.168.0.1/api/auth/register';
 
     try {
@@ -79,7 +80,7 @@ class _ReceiverRegistrationState extends State<ReceiverRegistration> {
           'Content-Type': 'application/json',
         },
         body: jsonEncode({
-          'role': 'receiver',
+          'role': 'donor',
         }),
       );
     } catch (_) {
@@ -261,15 +262,30 @@ class _ReceiverRegistrationState extends State<ReceiverRegistration> {
                 final token = await user.getIdToken(true);
 
                 if (token != null) {
-                  await _registerReceiverWithBackend(token);
+                  await _registerDonorWithBackend(token);
                 }
 
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const ReceiverFormPage(),
-                  ),
-                );
+                if (!mounted) return;
+
+                final enableLocation = await showAnimatedLocationPopup(context);
+
+                if (!mounted) return;
+
+                if (enableLocation == true) {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const DonorLocationPage(),
+                    ),
+                  );
+                } else {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const DonorInterface(),
+                    ),
+                  );
+                }
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text("Signup failed")),
@@ -301,7 +317,7 @@ class _ReceiverRegistrationState extends State<ReceiverRegistration> {
                   Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => const ReceiverLoginPage(),
+                      builder: (_) => const DonorLoginPage(),
                     ),
                   );
                 },
@@ -320,4 +336,159 @@ class _ReceiverRegistrationState extends State<ReceiverRegistration> {
       ],
     );
   }
+}
+
+Future<Object?> showAnimatedLocationPopup(BuildContext context) async {
+  const Color primaryPurple = Color(0xFF7C3AED);
+  const Color secondaryGrey = Color(0xFF6B7280);
+  final double dialogWidth = MediaQuery.of(context).size.width * 0.82;
+  return await showGeneralDialog(
+    context: context,
+    barrierDismissible: false,
+    barrierLabel: '',
+    barrierColor: Colors.black.withOpacity(0.45),
+    transitionDuration: const Duration(milliseconds: 180),
+    pageBuilder: (_, __, ___) => const SizedBox(),
+    transitionBuilder: (context, anim, __, ___) {
+      return Transform.scale(
+        scale: 0.96 + (anim.value * 0.04),
+        child: Opacity(
+          opacity: anim.value,
+          child: Center(
+            child: Container(
+              width: dialogWidth,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(22),
+                boxShadow: [
+                  BoxShadow(
+                    color: primaryPurple.withOpacity(0.22),
+                    blurRadius: 30,
+                    offset: const Offset(0, 18),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(22),
+                child: Container(
+                  padding: const EdgeInsets.fromLTRB(18, 16, 18, 14),
+                  color: Colors.white,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      /// ICON WITH WIDER, SOFTER GLOW
+                      SizedBox(
+                        width: 72,
+                        height: 72,
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            Container(
+                              width: 72,
+                              height: 72,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: primaryPurple
+                                        .withOpacity(0.34), // ⬅️ +5%
+                                    blurRadius: 70, // ⬅️ wider fade
+                                    spreadRadius: 20, // ⬅️ reaches sides
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Container(
+                              width: 52,
+                              height: 52,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: primaryPurple.withOpacity(0.14),
+                              ),
+                            ),
+                            Icon(
+                              Icons.location_on,
+                              size: 30,
+                              color: primaryPurple,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        'Enable Location',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context)
+                            .textTheme
+                            .titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Allow location so nearby receivers\n'
+                        'can find your donation.',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              fontSize: 13,
+                              height: 1.35,
+                              color: secondaryGrey,
+                            ),
+                      ),
+                      const SizedBox(height: 14),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 42,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: primaryPurple,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                          ),
+                          onPressed: () => Navigator.of(context).pop(true),
+                          child: Text(
+                            'Enable Location',
+                            style: Theme.of(context)
+                                .textTheme
+                                .labelLarge
+                                ?.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 42,
+                        child: TextButton(
+                          style: TextButton.styleFrom(
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                          ),
+                          onPressed: () => Navigator.of(context).pop(false),
+                          child: Text(
+                            'Maybe Later',
+                            style: Theme.of(context)
+                                .textTheme
+                                .labelLarge
+                                ?.copyWith(
+                                  color: secondaryGrey,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    },
+  );
 }

@@ -2,8 +2,7 @@
 
 import 'dart:ui';
 import 'package:flutter/material.dart';
-
-import '../donor/donor_interface.dart';
+import '../donor/auth/donor_registration.dart';
 import '../receiver/auth/receiver_registration.dart';
 
 /// --------------------------------------------------------
@@ -255,17 +254,13 @@ class SelectionScreen extends StatelessWidget {
                     _buildGlassCard(
                       icon: Icons.volunteer_activism_outlined,
                       isShare: true,
-                      onTap: () async {
-                        final proceed =
-                            await showAnimatedLocationPopup(context);
-                        if (proceed == true || proceed == false) {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => DonorInterface(),
-                            ),
-                          );
-                        }
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => DonorRegistration(),
+                          ),
+                        );
                       },
                     ),
 

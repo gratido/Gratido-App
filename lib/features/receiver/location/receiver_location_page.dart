@@ -1,23 +1,18 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:location/location.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:http/http.dart' as http;
 
-class MapPickerPage extends StatefulWidget {
-  const MapPickerPage({super.key});
+class ReceiverLocationPage extends StatefulWidget {
+  const ReceiverLocationPage({super.key});
 
   @override
-  State<MapPickerPage> createState() => _MapPickerPageState();
+  State<ReceiverLocationPage> createState() => _ReceiverLocationPageState();
 }
 
-class _MapPickerPageState extends State<MapPickerPage> {
+class _ReceiverLocationPageState extends State<ReceiverLocationPage> {
   final MapController _mapController = MapController();
   LatLng? _currentLocation;
-  String _addressText = "Fetching location...";
 
   @override
   void initState() {
@@ -25,15 +20,8 @@ class _MapPickerPageState extends State<MapPickerPage> {
     _getCurrentLocation();
   }
 
-  // ================= LOCATION =================
-
   Future<void> _getCurrentLocation() async {
     final location = Location();
-
-    await location.changeSettings(
-      accuracy: LocationAccuracy.high,
-      distanceFilter: 0,
-    );
 
     bool serviceEnabled = await location.serviceEnabled();
     if (!serviceEnabled) {
@@ -48,56 +36,19 @@ class _MapPickerPageState extends State<MapPickerPage> {
     }
 
     final data = await location.getLocation();
-    final latLng = LatLng(data.latitude!, data.longitude!);
+    setState(() {
+      _currentLocation = LatLng(data.latitude!, data.longitude!);
+    });
 
-    setState(() => _currentLocation = latLng);
-
-    _mapController.move(latLng, 16);
-    await _fetchAddressFromLatLng(latLng);
+    _mapController.move(_currentLocation!, 16);
   }
-
-  // ================= REVERSE GEOCODING =================
-
-  Future<void> _fetchAddressFromLatLng(LatLng latLng) async {
-    final url = Uri.parse(
-      "https://nominatim.openstreetmap.org/reverse"
-      "?format=json"
-      "&zoom=18"
-      "&lat=${latLng.latitude}"
-      "&lon=${latLng.longitude}",
-    );
-
-    final response = await http.get(
-      url,
-      headers: {'User-Agent': 'gratido-app'},
-    );
-
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      final address = data['address'];
-
-      final parts = [
-        address['road'],
-        address['suburb'] ?? address['neighbourhood'],
-        address['city'] ?? address['town'],
-        address['state'],
-      ];
-
-      setState(() {
-        _addressText =
-            parts.where((e) => e != null && e.toString().isNotEmpty).join(', ');
-      });
-    }
-  }
-
-  // ================= UI =================
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Stack(
         children: [
-          /// 🌍 MAP
+          /// 🌍 OpenStreetMap background
           FlutterMap(
             mapController: _mapController,
             options: MapOptions(
@@ -107,8 +58,8 @@ class _MapPickerPageState extends State<MapPickerPage> {
             children: [
               TileLayer(
                 urlTemplate:
-                    'https://api.maptiler.com/maps/streets/{z}/{x}/{y}.png?key=gA9zLzMGmU4X1tFmnSBE',
-                userAgentPackageName: 'com.gratido.app',
+                    "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+                subdomains: const ['a', 'b', 'c'],
               ),
               if (_currentLocation != null)
                 MarkerLayer(
@@ -124,7 +75,7 @@ class _MapPickerPageState extends State<MapPickerPage> {
             ],
           ),
 
-          /// 🔍 SEARCH BAR (UI KEPT — NO LOGIC ATTACHED)
+          /// 🔍 Top search bar
           Positioned(
             top: MediaQuery.of(context).padding.top + 16,
             left: 16,
@@ -132,22 +83,27 @@ class _MapPickerPageState extends State<MapPickerPage> {
             child: _searchBar(),
           ),
 
-          /// 📍 MY LOCATION BUTTON (ONLY ONE)
+          /// 📍 Right floating buttons
           Positioned(
             right: 16,
             top: MediaQuery.of(context).size.height * 0.4,
-            child: _mapButton(Icons.my_location, _getCurrentLocation),
+            child: Column(
+              children: [
+                _mapButton(Icons.my_location, _getCurrentLocation),
+                const SizedBox(height: 12),
+                _mapButton(Icons.layers),
+              ],
+            ),
           ),
 
-          /// ⬆️ BOTTOM SHEET
+          /// ⬆️ Bottom sheet
           _bottomSheet(),
         ],
       ),
     );
   }
 
-  // ================= WIDGETS =================
-
+  /// Avatar marker like your design
   Widget _avatarMarker() {
     return Stack(
       alignment: Alignment.center,
@@ -159,7 +115,10 @@ class _MapPickerPageState extends State<MapPickerPage> {
             shape: BoxShape.circle,
             border: Border.all(color: Colors.white, width: 4),
             boxShadow: const [
-              BoxShadow(blurRadius: 15, color: Colors.black26),
+              BoxShadow(
+                blurRadius: 15,
+                color: Colors.black26,
+              )
             ],
             image: const DecorationImage(
               image: AssetImage("assets/images/avatar.png"),
@@ -179,7 +138,7 @@ class _MapPickerPageState extends State<MapPickerPage> {
               border: Border.all(color: Colors.white, width: 2),
             ),
           ),
-        ),
+        )
       ],
     );
   }
@@ -258,47 +217,30 @@ class _MapPickerPageState extends State<MapPickerPage> {
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 6),
-            Text(
-              _addressText,
-              style: const TextStyle(color: Colors.grey),
+            const Text(
+              "Set your precise pickup point for the donation",
+              style: TextStyle(color: Colors.grey),
             ),
             const SizedBox(height: 20),
-
-            /// ✅ CONFIRM — RETURNS VALUE TO CONTACT PAGE
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF6E5CD6),
+                backgroundColor: const Color(0xFF8B5CF6),
                 minimumSize: const Size(double.infinity, 56),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(18),
                 ),
               ),
-              onPressed: _confirmAndReturn,
+              onPressed: () {
+                // Save location & continue
+              },
               child: const Text(
                 "Confirm Location →",
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
             ),
           ],
         ),
       ),
     );
-  }
-
-  // ================= CONFIRM =================
-
-  Future<void> _confirmAndReturn() async {
-    if (_currentLocation == null) return;
-
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setDouble('donor_lat', _currentLocation!.latitude);
-    await prefs.setDouble('donor_lng', _currentLocation!.longitude);
-    await prefs.setString('donor_address', _addressText);
-
-    Navigator.pop(context, _addressText);
   }
 }
