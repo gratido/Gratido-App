@@ -1,5 +1,6 @@
 // ignore_for_file: avoid_print
-
+import 'dart:convert'; // ✅ Added
+import 'package:http/http.dart' as http;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter/services.dart'; // ✅ Added for Clipboard functionality
@@ -36,8 +37,39 @@ class FirebaseAuthService {
     }
   }
 
+  // ✅ SENIOR FIX: The logic that actually creates the row in Supabase
+  Future<void> _syncWithBackend(User? user, String role) async {
+    if (user == null) return;
+
+    // 🚨 DOUBLE CHECK THIS IP right now using 'ipconfig'
+    // If you are on a different Wi-Fi, this might have changed!
+    const String currentLaptopIp = "192.168.0.4";
+
+    try {
+      final token = await user.getIdToken(true);
+      final response = await http
+          .post(
+            Uri.parse('http://$currentLaptopIp:5227/api/auth/register'),
+            headers: {
+              'Authorization': 'Bearer $token',
+              'Content-Type': 'application/json',
+            },
+            body: jsonEncode({'role': role}),
+          )
+          .timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 200) {
+        print("✅ Supabase Sync Success for ${user.email}");
+      } else {
+        print("❌ Supabase Sync Rejected: ${response.body}");
+      }
+    } catch (e) {
+      print("❌ Connection to Laptop Failed: $e. Is your Backend running (F5)?");
+    }
+  }
+
   // ✨ EMAIL SIGNUP
-  Future<User?> signup(String email, String password) async {
+  Future<User?> signup(String email, String password, String role) async {
     try {
       final UserCredential userCredential =
           await _auth.createUserWithEmailAndPassword(
@@ -45,21 +77,24 @@ class FirebaseAuthService {
         password: password,
       );
 
-      // Handle token for Postman
-      await _handleToken(userCredential.user);
-
-      return userCredential.user;
+      final User? user = userCredential.user;
+      if (user != null) {
+        // Attempt sync, but don't crash the whole app if laptop Wi-Fi fails
+        await _syncWithBackend(user, role);
+        await _handleToken(user);
+      }
+      return user;
     } on FirebaseAuthException catch (e) {
-      print('Signup error [${e.code}]: ${e.message}');
+      print('🔥 Firebase Signup Error [${e.code}]: ${e.message}');
       return null;
     } catch (e) {
-      print('Signup error (unknown): $e');
+      print('🔥 Unknown Signup Error: $e');
       return null;
     }
   }
 
-  // ✨ EMAIL LOGIN
-  Future<User?> login(String email, String password) async {
+  // ✨ EMAIL LOGIN (Updated with Role and Sync)
+  Future<User?> login(String email, String password, String role) async {
     try {
       final UserCredential userCredential =
           await _auth.signInWithEmailAndPassword(
@@ -67,30 +102,29 @@ class FirebaseAuthService {
         password: password,
       );
 
-      // Handle token for Postman
+      await _syncWithBackend(userCredential.user, role);
       await _handleToken(userCredential.user);
 
       return userCredential.user;
     } on FirebaseAuthException catch (e) {
-      print('Login error [${e.code}]: ${e.message}');
-      return null;
-    } catch (e) {
-      print('Login error (unknown): $e');
+      print('🔥 Login Failed [${e.code}]: ${e.message}');
       return null;
     }
   }
 
   // ✨ GOOGLE LOGIN – updated for google_sign_in ^7.x
-  Future<User?> googleLogin() async {
+  // ✨ GOOGLE LOGIN – Updated to sync with Supabase while keeping v7 logic intact
+  Future<User?> googleLogin(String role) async {
     try {
-      // Make sure GoogleSignIn is initialized (required in v7)
+      // 1. Make sure GoogleSignIn is initialized (required in v7)
       await _ensureGoogleInitialized();
 
-      // v7: use `authenticate()` as in your working code
+      // 2. v7: use `authenticate()` as in your working code
       final GoogleSignInAccount googleUser = await _googleSignIn.authenticate(
         scopeHint: const <String>['email'],
       );
 
+      // 3. v7: authentication is synchronous (no await)
       final GoogleSignInAuthentication googleAuth = googleUser.authentication;
 
       if (googleAuth.idToken == null) {
@@ -102,10 +136,15 @@ class FirebaseAuthService {
         idToken: googleAuth.idToken,
       );
 
+      // 4. Sign into Firebase
       final UserCredential userCredential =
           await _auth.signInWithCredential(credential);
 
-      // Handle token for Postman
+      // 🚀 5. SUPABASE SYNC: This is the magic update!
+      // It ensures Google users are added to your database automatically.
+      await _syncWithBackend(userCredential.user, role);
+
+      // 6. Handle token for Postman (Your existing logic)
       await _handleToken(userCredential.user);
 
       return userCredential.user;

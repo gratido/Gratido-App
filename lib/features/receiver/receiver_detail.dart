@@ -6,6 +6,7 @@ import 'receiver_tracking.dart';
 
 // ✅ NEW IMPORT
 import 'models/food_item.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 /// GRATIDO THEME
 const Color primary = Color(0xFF6E5CD6);
@@ -328,7 +329,26 @@ class ReceiverDetailPage extends StatelessWidget {
     );
   }
 
+  Future<void> _callDonor(String phoneNumber) async {
+    final Uri phoneUri = Uri(
+      scheme: 'tel',
+      path: phoneNumber,
+    );
+
+    if (await canLaunchUrl(phoneUri)) {
+      await launchUrl(
+        phoneUri,
+        mode: LaunchMode.externalApplication,
+      );
+    } else {
+      debugPrint('Could not launch dialer');
+    }
+  }
+
   Widget _contactDonorButton() {
+    const String donorPhone =
+        '+919876543210'; // TODO: replace with real number from model
+
     return SizedBox(
       width: double.infinity,
       height: 46,
@@ -343,7 +363,7 @@ class ReceiverDetailPage extends StatelessWidget {
           borderRadius: BorderRadius.circular(24),
         ),
         child: TextButton.icon(
-          onPressed: () {},
+          onPressed: () => _callDonor(donorPhone),
           icon: const Icon(Icons.call, color: primary),
           label: const Text(
             'Contact Donor',

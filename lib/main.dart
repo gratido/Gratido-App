@@ -11,12 +11,18 @@ import 'features/donor/donor_listing.dart';
 import 'features/donor/donation_detail.dart';
 import 'features/donor/donor_interface.dart';
 import 'features/donor/donation_repo.dart';
-import 'features/selection_interface/selection.dart';
+import 'features/onboarding_cards/onboarding_screen.dart';
 import 'package:gratido_sample/features/receiver/auth/wrapperclass.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
+  await Supabase.initialize(
+    url: 'https://iryipjtijhtalkcoddqv.supabase.co', // 👈 PASTE YOUR URL HERE
+    anonKey:
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlyeWlwanRpamh0YWxrY29kZHF2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk4MTA0MDAsImV4cCI6MjA4NTM4NjQwMH0.2_Yjn-aSwltyU1kzFHRe1Ijqr_5OD8d4WSDK_4dj69c', // 👈 PASTE YOUR KEY HERE
+  );
 
   runApp(const GratidoApp());
 }
@@ -84,7 +90,7 @@ class GratidoApp extends StatelessWidget {
       },
 
       // --------------------------
-      home: const SelectionScreen(),
+      home: const OnboardingScreen(),
       // Keep the original home screen
     );
   }

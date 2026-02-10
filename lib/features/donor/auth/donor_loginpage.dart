@@ -221,6 +221,7 @@ class _DonorLoginPageState extends State<DonorLoginPage> {
               final user = await _auth.login(
                 emailController.text.trim(),
                 passwordController.text.trim(),
+                "Donor", // ✅ Role added for backend sync
               );
 
               if (user != null) {
@@ -295,7 +296,8 @@ class _DonorLoginPageState extends State<DonorLoginPage> {
               ),
             ),
             onPressed: () async {
-              final user = await _auth.googleLogin();
+              final user = await _auth
+                  .googleLogin("Donor"); // ✅ Role added for backend sync
               if (user != null) {
                 final enableLocation =
                     await showAnimatedLocationPopup(context); // ✅ RESULT USED

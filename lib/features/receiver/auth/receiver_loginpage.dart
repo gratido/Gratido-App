@@ -5,7 +5,8 @@ import 'package:flutter/material.dart';
 import '../auth/firebase_auth_service.dart';
 import 'receiver_registration.dart';
 import 'forgotpassword_interface.dart';
-import '../receiver_home.dart';
+//import '../receiver_home.dart';
+import '../auth/wrapperclass.dart';
 
 class ReceiverLoginPage extends StatefulWidget {
   const ReceiverLoginPage({super.key});
@@ -230,9 +231,15 @@ class _ReceiverLoginPageState extends State<ReceiverLoginPage> {
               final user = await _auth.login(
                 emailController.text.trim(),
                 passwordController.text.trim(),
+                "Receiver", // ✅ Role added for backend sync
               );
               if (user != null) {
-                Navigator.pushReplacementNamed(context, '/receiver');
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const WrapperClass(),
+                  ),
+                );
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text("Login failed")),
@@ -287,12 +294,13 @@ class _ReceiverLoginPageState extends State<ReceiverLoginPage> {
               ),
             ),
             onPressed: () async {
-              final user = await _auth.googleLogin();
+              final user = await _auth
+                  .googleLogin("Receiver"); // ✅ Role added for backend sync
               if (user != null) {
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => const ReceiverHomePage(),
+                    builder: (_) => const WrapperClass(),
                   ),
                 );
               }

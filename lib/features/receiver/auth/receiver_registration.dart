@@ -6,8 +6,9 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 import '../auth/firebase_auth_service.dart';
-import 'package:gratido_sample/features/receiver/receiver_form.dart';
+//import 'package:gratido_sample/features/receiver/receiver_form.dart';
 import 'receiver_loginpage.dart';
+import '../auth/wrapperclass.dart';
 
 class ReceiverRegistration extends StatefulWidget {
   const ReceiverRegistration({super.key});
@@ -69,7 +70,7 @@ class _ReceiverRegistrationState extends State<ReceiverRegistration> {
 
   // 🔥 ADDED: Backend role registration (SAFE, ONE-TIME)
   Future<void> _registerReceiverWithBackend(String token) async {
-    const String backendUrl = 'https://192.168.0.1/api/auth/register';
+    const String backendUrl = 'https://192.168.0.4/api/auth/register';
 
     try {
       await http.post(
@@ -79,7 +80,7 @@ class _ReceiverRegistrationState extends State<ReceiverRegistration> {
           'Content-Type': 'application/json',
         },
         body: jsonEncode({
-          'role': 'receiver',
+          'role': 'Receiver',
         }),
       );
     } catch (_) {
@@ -255,6 +256,7 @@ class _ReceiverRegistrationState extends State<ReceiverRegistration> {
               final user = await _auth.signup(
                 email.text.trim(),
                 pass.text.trim(),
+                "Receiver", // ✅ Role added for backend sync
               );
 
               if (user != null) {
@@ -267,7 +269,7 @@ class _ReceiverRegistrationState extends State<ReceiverRegistration> {
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => const ReceiverFormPage(),
+                    builder: (_) => const WrapperClass(),
                   ),
                 );
               } else {

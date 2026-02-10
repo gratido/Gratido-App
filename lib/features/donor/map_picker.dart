@@ -16,8 +16,15 @@ class MapPickerPage extends StatefulWidget {
 
 class _MapPickerPageState extends State<MapPickerPage> {
   final MapController _mapController = MapController();
+  final TextEditingController _searchCtrl = TextEditingController();
+
   LatLng? _currentLocation;
   String _addressText = "Fetching location...";
+
+  // 🔒 stability guards
+  bool _isLoading = false;
+  String _lastSearch = '';
+  DateTime _lastRequestTime = DateTime.fromMillisecondsSinceEpoch(0);
 
   @override
   void initState() {
@@ -25,54 +32,130 @@ class _MapPickerPageState extends State<MapPickerPage> {
     _getCurrentLocation();
   }
 
-  // ================= LOCATION =================
+  // ================= CURRENT LOCATION =================
 
   Future<void> _getCurrentLocation() async {
-    final location = Location();
+    if (_isLoading) return;
+    _isLoading = true;
 
-    await location.changeSettings(
-      accuracy: LocationAccuracy.high,
-      distanceFilter: 0,
-    );
+    try {
+      final location = Location();
 
-    bool serviceEnabled = await location.serviceEnabled();
-    if (!serviceEnabled) {
-      serviceEnabled = await location.requestService();
-      if (!serviceEnabled) return;
+      await location.changeSettings(
+        accuracy: LocationAccuracy.high,
+        distanceFilter: 0,
+      );
+
+      bool serviceEnabled = await location.serviceEnabled();
+      if (!serviceEnabled) {
+        serviceEnabled = await location.requestService();
+        if (!serviceEnabled) return;
+      }
+
+      PermissionStatus permission = await location.hasPermission();
+      if (permission == PermissionStatus.denied) {
+        permission = await location.requestPermission();
+        if (permission != PermissionStatus.granted) return;
+      }
+
+      final data = await location.getLocation();
+      final latLng = LatLng(data.latitude!, data.longitude!);
+
+      setState(() => _currentLocation = latLng);
+      _mapController.move(latLng, 16);
+
+      await _fetchAddressFromLatLng(latLng);
+    } finally {
+      _isLoading = false;
     }
+  }
 
-    PermissionStatus permission = await location.hasPermission();
-    if (permission == PermissionStatus.denied) {
-      permission = await location.requestPermission();
-      if (permission != PermissionStatus.granted) return;
+  // ================= DRAG TO SELECT =================
+
+  void _onMapEvent(MapEvent event) {
+    if (event is MapEventMoveEnd) {
+      if (_isLoading) return;
+
+      final center = event.camera.center;
+      _currentLocation = center;
+      _fetchAddressFromLatLng(center);
     }
+  }
 
-    final data = await location.getLocation();
-    final latLng = LatLng(data.latitude!, data.longitude!);
+  // ================= SEARCH =================
 
-    setState(() => _currentLocation = latLng);
+  Future<void> _searchAddress(String query) async {
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) return;
 
-    _mapController.move(latLng, 16);
-    await _fetchAddressFromLatLng(latLng);
+    // avoid duplicate + spam
+    if (trimmed == _lastSearch) return;
+
+    final now = DateTime.now();
+    if (now.difference(_lastRequestTime).inMilliseconds < 800) return;
+
+    if (_isLoading) return;
+
+    _isLoading = true;
+    _lastSearch = trimmed;
+    _lastRequestTime = now;
+
+    try {
+      final url = Uri.parse(
+        "https://nominatim.openstreetmap.org/search"
+        "?q=${Uri.encodeComponent(trimmed)}"
+        "&format=json"
+        "&addressdetails=1"
+        "&limit=1"
+        "&countrycodes=in",
+      );
+
+      final res = await http.get(
+        url,
+        headers: {'User-Agent': 'gratido-app'},
+      );
+
+      if (res.statusCode != 200) return;
+
+      final list = json.decode(res.body) as List;
+      if (list.isEmpty) return;
+
+      final latLng = LatLng(
+        double.parse(list.first['lat']),
+        double.parse(list.first['lon']),
+      );
+
+      setState(() => _currentLocation = latLng);
+      _mapController.move(latLng, 16);
+
+      await _fetchAddressFromLatLng(latLng);
+    } finally {
+      _isLoading = false;
+    }
   }
 
   // ================= REVERSE GEOCODING =================
 
   Future<void> _fetchAddressFromLatLng(LatLng latLng) async {
-    final url = Uri.parse(
-      "https://nominatim.openstreetmap.org/reverse"
-      "?format=json"
-      "&zoom=18"
-      "&lat=${latLng.latitude}"
-      "&lon=${latLng.longitude}",
-    );
+    if (_isLoading) return;
+    _isLoading = true;
 
-    final response = await http.get(
-      url,
-      headers: {'User-Agent': 'gratido-app'},
-    );
+    try {
+      final url = Uri.parse(
+        "https://nominatim.openstreetmap.org/reverse"
+        "?format=json"
+        "&zoom=18"
+        "&lat=${latLng.latitude}"
+        "&lon=${latLng.longitude}",
+      );
 
-    if (response.statusCode == 200) {
+      final response = await http.get(
+        url,
+        headers: {'User-Agent': 'gratido-app'},
+      );
+
+      if (response.statusCode != 200) return;
+
       final data = json.decode(response.body);
       final address = data['address'];
 
@@ -87,6 +170,8 @@ class _MapPickerPageState extends State<MapPickerPage> {
         _addressText =
             parts.where((e) => e != null && e.toString().isNotEmpty).join(', ');
       });
+    } finally {
+      _isLoading = false;
     }
   }
 
@@ -103,6 +188,7 @@ class _MapPickerPageState extends State<MapPickerPage> {
             options: MapOptions(
               initialCenter: _currentLocation ?? const LatLng(20, 78),
               initialZoom: 5,
+              onMapEvent: _onMapEvent,
             ),
             children: [
               TileLayer(
@@ -110,29 +196,43 @@ class _MapPickerPageState extends State<MapPickerPage> {
                     'https://api.maptiler.com/maps/streets/{z}/{x}/{y}.png?key=gA9zLzMGmU4X1tFmnSBE',
                 userAgentPackageName: 'com.gratido.app',
               ),
-              if (_currentLocation != null)
-                MarkerLayer(
-                  markers: [
-                    Marker(
-                      point: _currentLocation!,
-                      width: 70,
-                      height: 70,
-                      child: _avatarMarker(),
-                    ),
-                  ],
-                ),
             ],
           ),
 
-          /// 🔍 SEARCH BAR (UI KEPT — NO LOGIC ATTACHED)
+          /// 📍 FIXED CENTER MARKER (NO POINTER EVENTS)
+          Center(
+            child: IgnorePointer(child: _avatarMarker()),
+          ),
+
+          /// 🔍 SEARCH BAR
           Positioned(
             top: MediaQuery.of(context).padding.top + 16,
             left: 16,
             right: 16,
-            child: _searchBar(),
+            child: Material(
+              elevation: 6,
+              borderRadius: BorderRadius.circular(20),
+              child: TextField(
+                controller: _searchCtrl,
+                enabled: !_isLoading,
+                textInputAction: TextInputAction.search,
+                onSubmitted: _searchAddress,
+                decoration: InputDecoration(
+                  hintText: "Search for an address...",
+                  prefixIcon: const Icon(Icons.search),
+                  suffixIcon: const Icon(Icons.tune),
+                  filled: true,
+                  fillColor: Colors.white,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(20),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
+            ),
           ),
 
-          /// 📍 MY LOCATION BUTTON (ONLY ONE)
+          /// 📍 MY LOCATION BUTTON
           Positioned(
             right: 16,
             top: MediaQuery.of(context).size.height * 0.4,
@@ -184,27 +284,7 @@ class _MapPickerPageState extends State<MapPickerPage> {
     );
   }
 
-  Widget _searchBar() {
-    return Material(
-      elevation: 6,
-      borderRadius: BorderRadius.circular(20),
-      child: TextField(
-        decoration: InputDecoration(
-          hintText: "Search for an address...",
-          prefixIcon: const Icon(Icons.search),
-          suffixIcon: const Icon(Icons.tune),
-          filled: true,
-          fillColor: Colors.white,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(20),
-            borderSide: BorderSide.none,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _mapButton(IconData icon, [VoidCallback? onTap]) {
+  Widget _mapButton(IconData icon, VoidCallback onTap) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -225,65 +305,56 @@ class _MapPickerPageState extends State<MapPickerPage> {
   Widget _bottomSheet() {
     return Align(
       alignment: Alignment.bottomCenter,
-      child: Container(
-        height: 260,
-        padding: const EdgeInsets.all(24),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(40)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black26,
-              blurRadius: 30,
-              offset: Offset(0, -10),
-            )
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 5,
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(10),
+      child: SafeArea(
+        top: false,
+        child: Container(
+          height: 260,
+          padding: const EdgeInsets.all(24),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(40)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 20),
-            const Text(
-              "Your Location",
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              _addressText,
-              style: const TextStyle(color: Colors.grey),
-            ),
-            const SizedBox(height: 20),
-
-            /// ✅ CONFIRM — RETURNS VALUE TO CONTACT PAGE
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF6E5CD6),
-                minimumSize: const Size(double.infinity, 56),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(18),
+              const SizedBox(height: 20),
+              const Text(
+                "Your Location",
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 6),
+              Text(_addressText, style: const TextStyle(color: Colors.grey)),
+              const Spacer(),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF6E5CD6),
+                  minimumSize: const Size(double.infinity, 56),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                ),
+                onPressed: _confirmAndReturn,
+                child: const Text(
+                  "Confirm Location →",
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
                 ),
               ),
-              onPressed: _confirmAndReturn,
-              child: const Text(
-                "Confirm Location →",
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

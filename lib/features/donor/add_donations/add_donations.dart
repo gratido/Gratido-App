@@ -5,8 +5,8 @@ import 'controllers/contact_controller.dart';
 import 'controllers/food_controller.dart';
 import 'donor_widgets/donor_widgets.dart';
 import '../map_picker.dart';
-import '../donation_repo.dart';
-import '../donor_listing.dart';
+//import '../donor_listing.dart';
+import '../myDonations.dart';
 
 class AddDonationsScreen extends StatefulWidget {
   const AddDonationsScreen({super.key});
@@ -27,7 +27,6 @@ class _AddDonationsScreenState extends State<AddDonationsScreen>
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
 
-    // Block tapping “Food details” unless contact is valid
     _tabController.addListener(() {
       if (_tabController.index == 1) {
         final formValid = _contactFormKey.currentState?.validate() ?? false;
@@ -39,7 +38,7 @@ class _AddDonationsScreenState extends State<AddDonationsScreen>
       }
     });
 
-    _contact.loadSavedContact(); // autofill if saved
+    _contact.loadSavedContact();
   }
 
   bool _isContactValid() {
@@ -56,7 +55,12 @@ class _AddDonationsScreenState extends State<AddDonationsScreen>
     super.dispose();
   }
 
+  // ✅ UPDATED: Now fetches real phone and address from UI and sends to backend
+// ✅ EXCITED UPDATE: THIS TRIGGERS YOUR PURPLE POPUP & CAPTURES MANUAL PHONE!
+  // ✅ SENIOR FIX: ULTIMATE SYNC — ORIGINAL UI + REAL BACKEND LOGIC! 🚀
+  // ✅ SENIOR FIX: ULTIMATE SYNC — ORIGINAL UI + REAL BACKEND LOGIC! 🚀
   Future<void> _submitDonation() async {
+    // 1. Check local UI validation
     final contactValid = _contact.donorController.text.trim().isNotEmpty &&
         _contact.phoneController.text.trim().length >= 10 &&
         _contact.pickupController.text.trim().isNotEmpty;
@@ -64,123 +68,126 @@ class _AddDonationsScreenState extends State<AddDonationsScreen>
     final foodValid = _food.isValid;
 
     if (!contactValid || !foodValid) {
-      // do not show snackbars per request — validators will show inline
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text("Please fill all required fields correctly")),
+      );
       return;
     }
 
-    DonationRepo.instance.addDonation(
-      Donation(
-        donorName: _contact.donorController.text.trim(),
-        foodName: _food.foodName,
-        phone: _contact.phoneController.text.trim(),
-        pickupLocation: _contact.pickupController.text.trim(),
-        pickupWindow: _food.pickupWindow!,
-        pickupWindowOther: _food.pickupWindowOther,
-        category: _food.category!,
-        quantity: _food.quantity,
-        photoPaths: List.from(_food.photoPaths),
-        hygieneConfirmed: _food.hygieneConfirmed,
-        preparedTime: _food.preparedSelected,
-        expiryTime: _food.expiryTime,
-        notes: _food.notes,
-      ),
-    );
+    // 2. Fetch the REAL data you typed manually!
+    final String realPhone = _contact.phoneController.text.trim();
+    final String realAddress = _contact.pickupController.text.trim();
 
-    await showDialog(
-      context: context,
-      barrierColor: Colors.black.withOpacity(0.25),
-      builder: (_) {
-        return Dialog(
-          backgroundColor: Colors.transparent,
-          insetPadding: const EdgeInsets.symmetric(horizontal: 28),
-          child: Stack(
-            alignment: Alignment.topCenter,
-            children: [
-              Container(
-                margin: const EdgeInsets.only(top: 32),
-                padding: const EdgeInsets.fromLTRB(22, 48, 22, 22),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(32),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF6E5CD6).withOpacity(.28),
-                      blurRadius: 36,
-                      offset: const Offset(0, 16),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const SizedBox(height: 20),
-                    const Text(
-                      "Donation submitted",
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
+    // 🚀 3. CALL REAL BACKEND (Passing the manual strings to our fixed controller)
+    final bool success =
+        await _food.submitDonation(context, realPhone, realAddress);
+
+    if (success) {
+      // ✅ 4. BOOM! SHOW YOUR ORIGINAL BEAUTIFUL PURPLE SUCCESS DIALOG!
+      await showDialog(
+        context: context,
+        barrierColor: Colors.black.withOpacity(0.25),
+        builder: (_) {
+          return Dialog(
+            backgroundColor: Colors.transparent,
+            insetPadding: const EdgeInsets.symmetric(horizontal: 28),
+            child: Stack(
+              alignment: Alignment.topCenter,
+              children: [
+                Container(
+                  margin: const EdgeInsets.only(top: 32),
+                  padding: const EdgeInsets.fromLTRB(22, 48, 22, 22),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(32),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF6E5CD6).withOpacity(.28),
+                        blurRadius: 36,
+                        offset: const Offset(0, 16),
                       ),
-                    ),
-                    const SizedBox(height: 6),
-                    const Text(
-                      "Your donation has been posted successfully.",
-                      style: TextStyle(
-                        color: Colors.grey,
-                        fontSize: 13,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 22),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF6E5CD6),
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(22),
-                          ),
-                          elevation: 6,
-                          shadowColor: const Color(0xFF6E5CD6).withOpacity(.45),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const SizedBox(height: 20),
+                      const Text(
+                        "Donation submitted",
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
                         ),
-                        child: const Text(
-                          "OK",
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w700,
+                      ),
+                      const SizedBox(height: 6),
+                      const Text(
+                        "Your donation has been posted successfully.",
+                        style: TextStyle(
+                          color: Colors.grey,
+                          fontSize: 13,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 22),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF6E5CD6),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(22),
+                            ),
+                            elevation: 6,
+                            shadowColor:
+                                const Color(0xFF6E5CD6).withOpacity(.45),
+                          ),
+                          child: const Text(
+                            "OK",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
 
-              // Floating check icon
-              Container(
-                width: 64,
-                height: 64,
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Color(0xFF6E5CD6),
+                // Floating check icon (Your original beautiful design)
+                Container(
+                  width: 64,
+                  height: 64,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Color(0xFF6E5CD6),
+                  ),
+                  child: const Icon(
+                    Icons.check,
+                    color: Colors.white,
+                    size: 34,
+                  ),
                 ),
-                child: const Icon(
-                  Icons.check,
-                  color: Colors.white,
-                  size: 34,
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
+              ],
+            ),
+          );
+        },
+      );
 
-    // Navigate to Donation Listings page
-    Navigator.of(
-      context,
-    ).pushReplacement(MaterialPageRoute(builder: (_) => const DonorListing()));
+      // ✅ 5. RESET AND NAVIGATE
+      _food.reset();
+      Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const MyDonations()));
+    } else {
+      // ❗ ERROR HANDLING: Alerts you if the port 5227 or IP is blocked!
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text("Submission failed. Check Laptop IP and Firewall!")),
+      );
+    }
   }
 
   Future<TimeOfDay?> _pickTime() async {
@@ -207,7 +214,6 @@ class _AddDonationsScreenState extends State<AddDonationsScreen>
 
   Future<void> _resetContactDetails() async {
     await _contact.resetContact();
-    // do NOT show snackbars (per request). keep UI updated
     setState(() {}); // refresh UI
   }
 
@@ -220,8 +226,8 @@ class _AddDonationsScreenState extends State<AddDonationsScreen>
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Color(0x1A6E5CD6), // 10% purple wash
-              Color(0x00FFFFFF), // fade to transparent
+              Color(0x1A6E5CD6),
+              Color(0x00FFFFFF),
             ],
           ),
         ),
@@ -272,7 +278,7 @@ class _AddDonationsScreenState extends State<AddDonationsScreen>
                 food: _food,
                 contact: _contact,
                 pickTime: _pickTime,
-                onSubmit: _submitDonation,
+                onSubmit: _submitDonation, // ✅ Triggers the real backend logic
               ),
             ],
           ),

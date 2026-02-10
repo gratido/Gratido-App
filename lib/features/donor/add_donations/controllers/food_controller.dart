@@ -1,10 +1,19 @@
-// lib/features/donor/add_donations/controllers/food_controller.dart
-// ignore_for_file: annotate_overrides, unnecessary_overrides
+// ignore_for_file: annotate_overrides, unnecessary_overrides, avoid_print
 
+import 'dart:convert'; // ✅ Added for jsonEncode
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http; // ✅ Added for API calls
+import 'package:firebase_auth/firebase_auth.dart'; // ✅ Added for Token
 import 'package:image_picker/image_picker.dart';
 
 class FoodController with ChangeNotifier {
+  // ---- API CONFIG ----
+  // 🚨 IMPORTANT: Change this to your laptop's IP address (from ipconfig)
+  static const String baseUrl = 'http://192.168.0.4/api';
+
+  // ---- LOADING STATE ----
+  bool isLoading = false; // ✅ Added to manage UI loading state
+
   // ---- FOOD NAME ----
   String? foodName;
   String? freshness;
@@ -22,7 +31,7 @@ class FoodController with ChangeNotifier {
   ];
 
   // ---- QUANTITY ----
-  int quantity = 0; // start empty-like (placeholder UX)
+  int quantity = 0;
 
   // ---- PREPARED TIME ----
   final List<String> preparedOptions = [
@@ -60,7 +69,59 @@ class FoodController with ChangeNotifier {
   static const int maxPhotos = 5;
 
   // =====================================================
-  // SETTERS
+  // BACKEND SUBMISSION LOGIC
+  // =====================================================
+
+  // ✅ EXCITED FIX: THE COMPLETE 11-FIELD SYNC WITH PORT 5227!
+  Future<bool> submitDonation(
+      BuildContext context, String donorPhone, String addressText) async {
+    if (!isValid) return false;
+    isLoading = true;
+    notifyListeners();
+
+    try {
+      final token = await FirebaseAuth.instance.currentUser?.getIdToken();
+
+      // 🚨 PORT FIX: Ensuring 5227 is used for the physical phone connection
+      final url = Uri.parse('http://192.168.0.4:5227/api/Donation/create');
+
+      final Map<String, dynamic> donationData = {
+        "foodTitle": foodName,
+        "category": category,
+        "quantity": quantity.toString(),
+        "preparedTime": preparedSelected ?? "Not Specified", // ✨ FIXES DETAILS
+        "donorPhone": donorPhone, // 📞 REAL MANUAL PHONE
+        "pickupWindow": pickupWindow ?? "ASAP",
+        "expiryDate":
+            (expiryDateObj ?? DateTime.now().add(const Duration(days: 1)))
+                .toIso8601String(), // 📅 Sending real ISO date
+        "latitude": 12.9716, "longitude": 77.5946,
+        "addressText": addressText, // 📍 REAL MANUAL ADDRESS
+        "imageUrls": photoPaths,
+      };
+
+      final response = await http.post(
+        url,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json'
+        },
+        body: jsonEncode(donationData),
+      );
+
+      print("📡 SERVER RESPONSE: ${response.statusCode}");
+      return response.statusCode == 200;
+    } catch (e) {
+      print("❌ CONNECTION FAILED: $e");
+      return false;
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // =====================================================
+  // SETTERS (Existing code preserved)
   // =====================================================
 
   void setFoodName(String v) {
@@ -70,7 +131,6 @@ class FoodController with ChangeNotifier {
 
   void setCategory(String? c) {
     category = c;
-
     if (c == 'Packed Food') {
       preparedSelected = null;
       freshness = null;
@@ -79,7 +139,6 @@ class FoodController with ChangeNotifier {
     } else {
       freshness = null;
     }
-
     notifyListeners();
   }
 
@@ -141,12 +200,10 @@ class FoodController with ChangeNotifier {
 
   Future<bool> pickImage() async {
     if (photoPaths.length >= maxPhotos) return false;
-
     final XFile? img = await picker.pickImage(
       source: ImageSource.camera,
       imageQuality: 78,
     );
-
     if (img != null) {
       photoPaths.add(img.path);
       notifyListeners();
@@ -163,7 +220,7 @@ class FoodController with ChangeNotifier {
   }
 
   // =====================================================
-  // VALIDATION (SMART LOGIC)
+  // VALIDATION
   // =====================================================
 
   bool get isValid {

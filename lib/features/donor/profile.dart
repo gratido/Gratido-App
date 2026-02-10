@@ -5,7 +5,6 @@ import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:gratido_sample/features/donor/donation_repo.dart';
 import 'package:gratido_sample/features/donor/pages/notifications_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -81,7 +80,6 @@ class _ProfileState extends State<Profile> {
   Future<void> _signOutAndNavigate() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear();
-    DonationRepo.instance.clearAll();
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => const SelectionScreen()),
       (_) => false,
@@ -97,7 +95,8 @@ class _ProfileState extends State<Profile> {
         backgroundColor: Colors.white,
         centerTitle: true,
 
-        // ✅ ensures icons (back + notification) are visible
+        // ✅ ensures icons
+        // (back + notification) are visible
         iconTheme: const IconThemeData(color: Colors.black),
 
         // ✅ THIS is the key line (Material 3 safe)
@@ -583,7 +582,6 @@ Future<void> showDeleteAccountDialog(BuildContext context) async {
                                   final prefs =
                                       await SharedPreferences.getInstance();
                                   await prefs.clear();
-                                  DonationRepo.instance.clearAll();
                                   Navigator.of(context).pushAndRemoveUntil(
                                     MaterialPageRoute(
                                       builder: (_) => const SelectionScreen(),

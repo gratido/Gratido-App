@@ -256,6 +256,7 @@ class _DonorRegistrationState extends State<DonorRegistration> {
               final user = await _auth.signup(
                 email.text.trim(),
                 pass.text.trim(),
+                "Donor", // ✅ Role added for backend sync
               );
 
               if (user != null) {

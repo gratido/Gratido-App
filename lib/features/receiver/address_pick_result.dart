@@ -1,5 +1,6 @@
 // lib/features/receiver/address_pick_result.dart
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+
+import 'package:latlong2/latlong.dart';
 
 class AddressPickResult {
   final LatLng position;

@@ -84,9 +84,8 @@ class _DonorListingState extends State<DonorListing> {
 
   @override
   Widget build(BuildContext context) {
-    final items = DonationRepo.instance.items.toList()
-      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-
+    final list = DonationRepo.instance.items.toList();
+    list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
     return Scaffold(
       appBar: AppBar(
         title: const Text(
@@ -110,7 +109,7 @@ class _DonorListingState extends State<DonorListing> {
         ),
         padding: const EdgeInsets.all(12),
         child: GridView.builder(
-          itemCount: items.length,
+          itemCount: list.length,
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 2,
             crossAxisSpacing: 16,
@@ -118,7 +117,7 @@ class _DonorListingState extends State<DonorListing> {
             mainAxisExtent: 215, // 🔒 unchanged
           ),
           itemBuilder: (context, index) {
-            final d = items[index];
+            final d = list[index];
 
             final title = (d.foodName != null && d.foodName!.trim().isNotEmpty)
                 ? d.foodName!

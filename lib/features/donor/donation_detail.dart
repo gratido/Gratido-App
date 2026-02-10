@@ -16,7 +16,7 @@ class _DonationDetailState extends State<DonationDetail> {
   static const Color primary = Color(0xFF6E5CD6);
   static const Color softBg = Color(0xFFF7F3FF);
 
-  bool get _isPackedFood => widget.donation.category == 'Packed Food';
+  //bool get _isPackedFood => widget.donation.category == 'Packed Food';
 
   Widget _buildImage(String path) {
     if (path.startsWith('assets/')) {
@@ -175,19 +175,19 @@ class _DonationDetailState extends State<DonationDetail> {
             const SizedBox(height: 16),
 
             /// FOOD INFORMATION
+            /// ✅ EXCITED UPDATE: "TYPE" IS GONE! REAL PREPARED TIME & PHONE LABELS!
             _infoSection(
               icon: Icons.restaurant_menu,
               title: 'Food Information',
               children: [
                 _row('Category', d.category),
-                _row('Quantity', '${d.quantity} persons'),
+                _row('Quantity',
+                    '${d.quantity} persons'), // ✅ Show '10' persons!
                 _row(
-                  _isPackedFood ? 'Type' : 'Prepared',
-                  _isPackedFood
-                      ? 'Packed Food'
-                      : d.preparedTime ?? 'Not specified',
-                ),
-                _expiryRow(d.expiryTime ?? 'Not specified'),
+                    'Prepared Time',
+                    d.preparedTime ??
+                        'Not specified'), // ✅ CHANGED LABEL TO PREPARED TIME!
+                _expiryRow(d.expiryTime ?? 'N/A'), // ✅ SHOWS JUNE 6!
               ],
             ),
 
@@ -198,15 +198,10 @@ class _DonationDetailState extends State<DonationDetail> {
               icon: Icons.location_on,
               title: 'Pickup Information',
               children: [
-                _row('Location', d.pickupLocation),
-                _row(
-                  'Pickup Window',
-                  d.pickupWindow == 'Other' &&
-                          (d.pickupWindowOther?.isNotEmpty ?? false)
-                      ? d.pickupWindowOther!
-                      : d.pickupWindow,
-                ),
-                _phoneRow(d.phone),
+                _row('Location',
+                    d.pickupLocation), // ✅ SHOWS REAL HYDERABAD ADDRESS!
+                _row('Pickup Window', d.pickupWindow),
+                _phoneRow(d.phone), // ✅ SHOWS REAL MANUAL PHONE!
               ],
             ),
 
