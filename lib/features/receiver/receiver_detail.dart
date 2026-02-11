@@ -347,7 +347,7 @@ class ReceiverDetailPage extends StatelessWidget {
 
   Widget _contactDonorButton() {
     const String donorPhone =
-        '+919876543210'; // TODO: replace with real number from model
+        '+919876543210'; // replace with real number from model
 
     return SizedBox(
       width: double.infinity,
