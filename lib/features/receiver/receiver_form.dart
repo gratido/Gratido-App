@@ -11,6 +11,7 @@ import 'dart:convert'; // ✅ Fixes 'jsonEncode' error
 import 'package:supabase_flutter/supabase_flutter.dart'; // ✅ Fixes 'Supabase' error
 import 'package:http/http.dart' as http; // ✅ Required for backend API call
 import 'package:firebase_auth/firebase_auth.dart'; // ✅ Required for Token retrieval
+import 'package:shared_preferences/shared_preferences.dart'; // ✅ For local storage of name/email
 
 /// 💜 GRATIDO COLOR TOKENS
 
@@ -210,8 +211,7 @@ class _ReceiverFormPageState extends State<ReceiverFormPage>
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
   }
 
-  // ✅ SENIOR FIX: UPLOADS DOCUMENTS AND CALLS BACKEND 🚀
-  // ✅ SENIOR FIX: INTEGRATED SUBMISSION WITH STORAGE & BACKEND 🚀
+  // ✅ UPDATED SUBMISSION: Handles unique file names and backend sync
   Future<void> _onSubmit() async {
     if (!_basicDetailsValid) {
       _showSnack('Please complete all details.');
@@ -230,12 +230,24 @@ class _ReceiverFormPageState extends State<ReceiverFormPage>
       final supabase = Supabase.instance.client;
       final List<String> uploadedUrls = [];
 
-      // 1. 📤 Upload to 'ngo-documents' bucket
+      // 🔑 Get Firebase Identity & Token
+      final currentUser = FirebaseAuth.instance.currentUser;
+      final token = await currentUser?.getIdToken();
+      final uid = currentUser?.uid ?? "unknown_user";
+
+      if (token == null) throw Exception("User not authenticated.");
+
+      // 1. 📤 Upload to Supabase 'receiver-documents' bucket
       for (var entry in _selectedDocuments.entries) {
         if (entry.value != null) {
-          final fileName =
-              'NGO_${DateTime.now().millisecondsSinceEpoch}_${entry.key.replaceAll(' ', '_')}.jpg';
+          // Detect actual file extension (pdf, jpg, etc.)
+          final fileExt = entry.value!.path.split('.').last;
 
+          // Construct unique filename: UserID + Timestamp + Label
+          final fileName =
+              '${uid}_${DateTime.now().millisecondsSinceEpoch}_${entry.key.replaceAll(' ', '_')}.$fileExt';
+
+          // Uploading to bucket 'receiver-documents'
           await supabase.storage
               .from('receiver-documents')
               .upload(fileName, entry.value!);
@@ -243,14 +255,13 @@ class _ReceiverFormPageState extends State<ReceiverFormPage>
           final String publicUrl = supabase.storage
               .from('receiver-documents')
               .getPublicUrl(fileName);
+
           uploadedUrls.add(publicUrl);
+          print("✅ Upload successful: $publicUrl");
         }
       }
 
-      // 2. 🔑 Get Auth Token
-      final token = await FirebaseAuth.instance.currentUser?.getIdToken();
-
-      // 3. 🚀 Call C# Backend (Using 192.168.0.4)
+      // 2. 🚀 Call C# Backend API (IP: 192.168.0.4)
       final registrationData = {
         "organizationName":
             _isGeneralPublic ? _fullNameCtrl.text : _registeredNameCtrl.text,
@@ -272,18 +283,27 @@ class _ReceiverFormPageState extends State<ReceiverFormPage>
       );
 
       if (response.statusCode == 200) {
+        // 💾 SENIOR FIX: Save name and email locally so Profile Page can read them
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('receiver_name', _fullNameCtrl.text);
+        await prefs.setString('receiver_email', _emailCtrl.text);
+
         _showSnack('Submitted! Waiting for Admin verification.');
+
+        // Brief delay so the user sees the confirmation
+        await Future.delayed(const Duration(seconds: 1));
         Navigator.of(context).pushReplacementNamed('/receiver');
       } else {
+        print("🔴 Backend returned error: ${response.body}");
         throw Exception("Server Error: ${response.body}");
       }
     } catch (e) {
+      print("❌ Error during submission: $e");
       _showSnack('Error: $e');
     } finally {
       setState(() => _isSubmitting = false);
     }
   }
-
   // ---------------- UI ROOT ----------------
 
   @override

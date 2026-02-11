@@ -21,7 +21,8 @@ class _AddDonationsScreenState extends State<AddDonationsScreen>
   final ContactController _contact = ContactController();
   final FoodController _food = FoodController();
   final GlobalKey<FormState> _contactFormKey = GlobalKey<FormState>();
-
+  double? _pickedLat;
+  double? _pickedLng;
   @override
   void initState() {
     super.initState();

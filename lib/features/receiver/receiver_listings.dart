@@ -10,7 +10,9 @@ import 'models/dummy_food_repo.dart';
 const Color primary = Color(0xFF6E5CD6);
 
 class ReceiverListingsPage extends StatefulWidget {
-  const ReceiverListingsPage({Key? key}) : super(key: key);
+  final bool isVerified; // ✅ NEW
+  const ReceiverListingsPage({Key? key, this.isVerified = false})
+      : super(key: key);
 
   @override
   State<ReceiverListingsPage> createState() => _ReceiverListingsPageState();
@@ -183,6 +185,26 @@ class _ReceiverListingsPageState extends State<ReceiverListingsPage> {
                       Expanded(
                         child: ElevatedButton(
                           onPressed: () {
+                            // 🔒 RESTRICTED ACCESS GATE
+                            if (!widget.isVerified) {
+                              showDialog(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  title: const Text("Verification Pending"),
+                                  content: const Text(
+                                      "Your documents are still under verification. Please try after they have been verified."),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(context),
+                                      child: const Text("OK"),
+                                    ),
+                                  ],
+                                ),
+                              );
+                              return; // Stop execution here
+                            }
+
+                            // ✅ PROCEED: Only for verified users
                             Navigator.of(context).push(
                               MaterialPageRoute(
                                 builder: (_) => ReceiverDetailPage(

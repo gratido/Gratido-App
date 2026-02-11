@@ -2,6 +2,7 @@
 
 import 'dart:io';
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -30,9 +31,26 @@ class _ReceiverProfilePageState extends State<ReceiverProfilePage> {
   static const Color primary = Color(0xFF6E5CD6);
   static const Color bgSoft = Color(0xFFF7F3FF);
 
-  String receiverName = '';
-  String receiverEmail = 'receiver@example.com';
+  String receiverName = 'Loading...';
+  String receiverEmail = 'Loading...';
   String? receiverPhotoPath;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfileData(); // 🔄 Load saved data when the page opens
+  }
+
+  Future<void> _loadProfileData() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      // Fetch the values we saved in receiver_form.dart
+      receiverName = prefs.getString('receiver_name') ?? 'No name saved';
+      receiverEmail =
+          prefs.getString('receiver_email') ?? 'no-email@example.com';
+      receiverPhotoPath = prefs.getString('receiver_photo');
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -358,12 +376,17 @@ Future<void> showReceiverSignOutDialog(
                     const SizedBox(width: 12),
                     Expanded(
                       child: ElevatedButton(
-                        onPressed: () {
+                        onPressed: () async {
+                          // 🔑 SENIOR FIX: Sign out of Firebase + Clear local storage
+                          await FirebaseAuth.instance.signOut();
+                          final prefs = await SharedPreferences.getInstance();
+                          await prefs.clear();
+
                           Navigator.of(context).pop();
                           onConfirmed();
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Color(0xFF6E5CD6),
+                          backgroundColor: const Color(0xFF6E5CD6),
                         ),
                         child: const Text(
                           'Logout',

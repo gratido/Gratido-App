@@ -8,7 +8,9 @@ import 'pages/receiver_notifications_page.dart';
 
 // ✅ NEW IMPORTS (MODEL + DUMMY REPO)
 import 'models/food_item.dart';
-import 'models/dummy_food_repo.dart';
+//import 'models/dummy_food_repo.dart';
+import 'package:http/http.dart' as http; // ✅ Required for backend API call
+import 'dart:convert'; // ✅ For JSON decoding
 
 // ================= COLORS =================
 const Color kPrimary = Color(0xFF6E5CD6);
@@ -17,7 +19,17 @@ const Color kBg = Color(0xFFF6F3FF);
 
 // ================= PAGE =================
 class ReceiverHomePage extends StatefulWidget {
-  const ReceiverHomePage({super.key});
+  final bool isVerified;
+  final String address;
+  final double lat; // ✅ NEW
+  final double lng;
+  const ReceiverHomePage({
+    super.key,
+    this.isVerified = false,
+    this.address = "Loading location...",
+    this.lat = 0.0,
+    this.lng = 0.0,
+  });
 
   @override
   State<ReceiverHomePage> createState() => _ReceiverHomePageState();
@@ -26,12 +38,37 @@ class ReceiverHomePage extends StatefulWidget {
 class _ReceiverHomePageState extends State<ReceiverHomePage> {
   int _navIndex = 0;
 
-  late List<FoodItem> _cards;
+  late List<FoodItem> _cards = [];
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _cards = DummyFoodRepo.getFoodItems();
+    _fetchNearbyDonations(); // ✅ Call the real API
+  }
+
+  // 🕵️‍♂️ SENIOR LOGIC: Fetches REAL data from C# Nearby API
+  Future<void> _fetchNearbyDonations() async {
+    try {
+      final response = await http.get(
+        Uri.parse(
+            'http://192.168.0.4:5227/api/Donation/nearby?lat=${widget.lat}&lng=${widget.lng}&radius=100'),
+      );
+
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(response.body);
+        final List<dynamic> data = decoded['data'];
+
+        setState(() {
+          _cards = data.map((item) => FoodItem.fromJson(item)).toList();
+          _isLoading = false;
+        });
+        debugPrint("✅ Fetched ${_cards.length} real donations nearby.");
+      }
+    } catch (e) {
+      debugPrint("❌ Error fetching donations: $e");
+      setState(() => _isLoading = false);
+    }
   }
 
   // ================= BUILD =================
@@ -39,26 +76,45 @@ class _ReceiverHomePageState extends State<ReceiverHomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: kBg,
-      resizeToAvoidBottomInset: false,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.only(bottom: 40),
-          child: Column(
-            children: [
-              const SizedBox(height: 10),
-              _header(),
-              const SizedBox(height: 11),
-              _search(),
-              const SizedBox(height: 15),
-              _hero(),
-              const SizedBox(height: 20),
-              _stackArea(),
-              const SizedBox(height: 8),
-              _swipeHint(),
-            ],
-          ),
-        ),
-      ),
+      resizeToAvoidBottomInset: false, // ✅ Keeps FAB static
+      body: _isLoading
+          ? const Center(
+              child:
+                  CircularProgressIndicator(color: kPrimary)) // ✅ Show loader
+          : RefreshIndicator(
+              // ✅ Allow user to pull-to-refresh
+              onRefresh: _fetchNearbyDonations,
+              child: SafeArea(
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.only(bottom: 40),
+                  child: Column(
+                    children: [
+                      const SizedBox(height: 10),
+                      _header(),
+                      const SizedBox(height: 11),
+                      _search(),
+                      const SizedBox(height: 15),
+                      _hero(),
+                      const SizedBox(height: 20),
+                      // Show a message if no food is found
+                      if (_cards.isEmpty)
+                        const Padding(
+                          padding: EdgeInsets.all(40.0),
+                          child: Text(
+                              "No donations nearby right now. Try again later!",
+                              textAlign: TextAlign.center,
+                              style: TextStyle(color: Colors.grey)),
+                        )
+                      else
+                        _stackArea(),
+                      const SizedBox(height: 8),
+                      if (_cards.isNotEmpty) _swipeHint(),
+                    ],
+                  ),
+                ),
+              ),
+            ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       floatingActionButton: _fab(),
       bottomNavigationBar: _bottomNav(),
@@ -73,11 +129,16 @@ class _ReceiverHomePageState extends State<ReceiverHomePage> {
         children: [
           const Icon(Icons.location_on, color: kPrimary),
           const SizedBox(width: 6),
-          const Text(
-            "Downtown Seattle, WA",
-            style: TextStyle(fontWeight: FontWeight.bold),
+          Expanded(
+            // ✅ Added Expanded to prevent overflow
+            child: Text(
+              widget.address, // ✅ Uses dynamic address from registration
+              maxLines: 1, // ✅ Restrict to one line
+              overflow: TextOverflow.ellipsis, // ✅ Adds "..." if too long
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
           ),
-          const Spacer(),
+          const SizedBox(width: 10),
           IconButton(
             icon: const Icon(Icons.notifications_none),
             onPressed: () {
@@ -203,6 +264,26 @@ class _ReceiverHomePageState extends State<ReceiverHomePage> {
 
   // ================= ACTIONS =================
   void _accept(FoodItem item) {
+    // ✅ RESTRICTED ACCESS POPUP
+    if (!widget.isVerified) {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text("Verification Pending"),
+          content: const Text(
+              "Your documents are still under verification. Please try after they have been verified."),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("OK"),
+            ),
+          ],
+        ),
+      );
+      return; // Stop here
+    }
+
+    // Existing logic for verified users
     setState(() => _cards.remove(item));
 
     Navigator.push(
@@ -213,6 +294,7 @@ class _ReceiverHomePageState extends State<ReceiverHomePage> {
     );
   }
 
+  // ✅ ADD THIS BACK: It was missing in your error log
   void _decline(FoodItem item) {
     setState(() => _cards.remove(item));
   }
@@ -240,14 +322,16 @@ class _ReceiverHomePageState extends State<ReceiverHomePage> {
     return Container(
       width: 64,
       height: 64,
+      // The FAB is docked to the center. To keep it static during popups,
+      // ensure the Scaffold's resizeToAvoidBottomInset is false.
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: kPrimary,
         boxShadow: [
           BoxShadow(
-            color: kPrimary.withOpacity(0.6),
-            blurRadius: 28,
-            offset: const Offset(0, 14),
+            color: kPrimary.withOpacity(0.4),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
@@ -451,6 +535,10 @@ class _SwipeCardState extends State<_SwipeCard> {
   }
 
   Widget _foodCard(FoodItem card) {
+    final String imagePath = card.images.isNotEmpty ? card.images.first : "";
+    final bool isWebUrl = imagePath.startsWith(
+        '/data/user/0/com.example.gratido_sample/cache/scaled_318b768e-004d-41d2-8a0a-0a7387072b454890145301184743664.jpg,/data/user/0/com.example.gratido_sample/cache/scaled_0fd07c22-e402-4e88-a6c5-8c2d5261ff724575523712942807748.jpg');
+
     return Material(
       borderRadius: BorderRadius.circular(32),
       elevation: 10,

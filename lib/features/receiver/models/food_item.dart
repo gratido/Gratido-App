@@ -18,4 +18,19 @@ class FoodItem {
     required this.pickupTime,
     required this.location,
   });
+
+  // ✅ NEW: Map Backend JSON to Flutter Model
+  factory FoodItem.fromJson(Map<String, dynamic> json) {
+    return FoodItem(
+      id: json['id'].toString(),
+      title: json['foodTitle'] ?? "No Title",
+      category: json['category'] ?? "General",
+      // Handles comma-separated string from C#
+      images: (json['imageUrls'] as String).split(','),
+      quantity: json['quantity'] ?? "0",
+      expiry: json['expiryDateText'] ?? "N/A",
+      pickupTime: json['pickupWindow'] ?? "Anytime",
+      location: json['address'] ?? "No Address",
+    );
+  }
 }
