@@ -1,10 +1,7 @@
-// lib/features/donor/donor_interface.dart
 import 'dart:async';
 import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
 import 'donor_listing.dart';
 import 'add_donations/add_donations.dart';
 import 'mydonations.dart';
@@ -12,18 +9,16 @@ import 'profile.dart';
 import 'donation_repo.dart';
 import 'donation_detail.dart';
 import 'pages/notifications_page.dart';
-import 'dart:convert'; // ✅ Fixes 'jsonDecode' error
-import 'package:http/http.dart' as http; // ✅ Fixes 'http' error
-import 'package:firebase_auth/firebase_auth.dart'; // ✅ Fixes 'FirebaseAuth' error
+import 'dart:convert'; 
+import 'package:http/http.dart' as http; 
+import 'package:firebase_auth/firebase_auth.dart'; 
 
-// ================= COLORS =================
 const Color kLavender = Color(0xFF6E5CD6);
 const Color kLavenderSoft = Color(0x226E5CD6);
 const Color kBg = Color(0xFFF7F5FB);
 const Color kPickupBg = Color(0xFFE8F1FF);
 const Color kPickupFg = Color(0xFF3B6FD8);
 
-// ================= HERO TEXT =================
 const List<Map<String, String>> heroText = [
   {
     "title": "Make a Difference Today",
@@ -63,15 +58,10 @@ class _DonorInterfaceState extends State<DonorInterface> {
     _heroController = PageController();
     _loadDonorName();
     _loadLocation();
-
-    // 1. ✅ Load Seeds immediately so the UI is never blank
     if (DonationRepo.instance.items.isEmpty) {
       DonationRepo.instance.seedDemo();
     }
 
-    // 2. ✅ TURBO-SYNC: This listener is the secret!
-    // It waits for Firebase to say "I am ready" before calling the server.
-    // This fixes the "Shows Zero on Login" bug forever.
     FirebaseAuth.instance.authStateChanges().listen((user) {
       if (user != null) {
         _prefetchData();
@@ -97,12 +87,12 @@ class _DonorInterfaceState extends State<DonorInterface> {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) return;
 
-      // ✅ Force a fresh token so the server doesn't reject you
+     
       final token = await user.getIdToken(true);
 
-      // ✅ IP SYNC: Using your latest IP 10.250.141.163
+    
       final response = await http.get(
-        Uri.parse('http://192.168.0.4:5227/api/Donation/my-donations'),
+        Uri.parse('http://192.168.0.5:5227/api/Donation/my-donations'),
         headers: {'Authorization': 'Bearer $token'},
       ).timeout(const Duration(seconds: 10)); // Stop spinning if Wi-Fi is slow
 
@@ -111,11 +101,11 @@ class _DonorInterfaceState extends State<DonorInterface> {
         final List<dynamic> data = body['data'] ?? [];
         final serverList = data.map((json) => Donation.fromJson(json)).toList();
 
-        // ✅ isHistoryView: false ensures your SEEDS stay on the Home Screen!
+        
         DonationRepo.instance.setServerItems(serverList, isHistoryView: false);
 
         print(
-            "🚀 [TURBO-LOAD] Synced ${serverList.length} items from Supabase!");
+            "[TURBO-LOAD] Synced ${serverList.length} items from Supabase!");
       }
     } catch (e) {
       debugPrint("Prefetch failed, using seeds only: $e");
@@ -195,7 +185,7 @@ class _DonorInterfaceState extends State<DonorInterface> {
     setState(() => _selectedIndex = index);
   }
 
-  // ✅ RESTORED: This method is now used in the build method below
+  // RESTORED: This method is now used in the build method below
   //bool _isNewDonation(Donation d) {
   // if (!d.isNew) return false;
   //return DateTime.now().difference(d.createdAt).inHours < 4;
@@ -203,10 +193,7 @@ class _DonorInterfaceState extends State<DonorInterface> {
 
   @override
   Widget build(BuildContext context) {
-    //final allItems = DonationRepo.instance.items;
     final donations = DonationRepo.instance.items;
-
-    // ✅ FIX: Only count real items from the database (Ignore the 3 seeds)
     final donationCount = donations
         .where((d) =>
             d.donorName != 'Featured Listing' &&
@@ -345,8 +332,6 @@ class _DonorInterfaceState extends State<DonorInterface> {
               ),
 
               const SizedBox(height: 18),
-
-              // TOTAL DONATIONS CARD
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: InkWell(
@@ -387,8 +372,6 @@ class _DonorInterfaceState extends State<DonorInterface> {
               ),
 
               const SizedBox(height: 22),
-
-              // LIST HEADER
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Row(
@@ -412,8 +395,6 @@ class _DonorInterfaceState extends State<DonorInterface> {
               ),
 
               const SizedBox(height: 14),
-
-              // HORIZONTAL LIST
               SizedBox(
                 height: 280,
                 child: ListView(
@@ -422,7 +403,6 @@ class _DonorInterfaceState extends State<DonorInterface> {
                   children: [
                     _ShareFoodDotted(onTap: _onFabTap),
                     ...donations.map((d) {
-                      // ✅ THE FIX: Calling your helper method here removes the warning
                       return _donationCard(
                         donation: d,
                         isNew: d.isNew,
@@ -490,8 +470,6 @@ class _DonorInterfaceState extends State<DonorInterface> {
       ),
     );
   }
-
-  // ✅ FIXED: Corrected the mapping to pass everything as String
   Widget _donationCard({
     required Donation donation,
     required bool isNew,
@@ -515,7 +493,7 @@ class _DonorInterfaceState extends State<DonorInterface> {
                   ? donation.foodName!
                   : donation.category,
               qty: donation
-                  .quantity, // ✅ Now strictly uses String from the model
+                  .quantity, 
               category: donation.category,
               date: _formatDate(donation.createdAt),
               pickup: donation.pickupWindow,
@@ -542,12 +520,10 @@ class _DonorInterfaceState extends State<DonorInterface> {
       ),
     );
   }
-
-  // ✅ FIXED: Changed parameter 'qty' from int to String to kill the Red Error
   Widget _donationSampleCard({
     required String? image,
     required String title,
-    required String qty, // ✅ Changed to String
+    required String qty, 
     required String category,
     required String date,
     required String pickup,

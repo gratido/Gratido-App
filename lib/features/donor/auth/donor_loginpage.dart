@@ -19,6 +19,7 @@ class _DonorLoginPageState extends State<DonorLoginPage> {
   final FirebaseAuthService _auth = FirebaseAuthService();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
 
   bool _obscurePassword = true;
 
@@ -124,256 +125,303 @@ class _DonorLoginPageState extends State<DonorLoginPage> {
   }
 
   Widget _content(BuildContext context) {
-    return Column(
-      children: [
-        const SizedBox(height: 6),
-        const Text(
-          "Welcome back!",
-          style: TextStyle(
-            fontSize: 28,
-            fontWeight: FontWeight.w700,
-            color: Color.fromARGB(255, 93, 73, 193),
+    return Form(
+      key: _formKey,
+      child: Column(
+        children: [
+          const SizedBox(height: 6),
+          const Text(
+            "Welcome back!",
+            style: TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.w700,
+              color: Color.fromARGB(255, 93, 73, 193),
+            ),
           ),
-        ),
-        const SizedBox(height: 6),
-        const Text(
-          '"Ready to make a difference today?"',
-          style: TextStyle(
-            fontSize: 12,
-            fontStyle: FontStyle.italic,
-            fontWeight: FontWeight.w500,
-            color: Color.fromARGB(255, 55, 32, 90),
+          const SizedBox(height: 6),
+          const Text(
+            '"Ready to make a difference today?"',
+            style: TextStyle(
+              fontSize: 12,
+              fontStyle: FontStyle.italic,
+              fontWeight: FontWeight.w500,
+              color: Color.fromARGB(255, 55, 32, 90),
+            ),
           ),
-        ),
-        const SizedBox(height: 28),
+          const SizedBox(height: 28),
 
-        TextField(
-          controller: emailController,
-          decoration: inputStyle(
-            hint: "Email address",
-            prefix:
-                const Icon(Icons.mail_outline, color: kPrimaryPurple, size: 20),
-          ),
-        ),
-        const SizedBox(height: 16),
-
-        TextField(
-          controller: passwordController,
-          obscureText: _obscurePassword,
-          decoration: inputStyle(
-            hint: "Password",
-            prefix:
-                const Icon(Icons.lock_outline, color: kPrimaryPurple, size: 20),
-            suffix: IconButton(
-              icon: Icon(
-                _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                color: kPrimaryPurple.withOpacity(0.7),
+          /// EMAIL
+          TextFormField(
+            controller: emailController,
+            decoration: inputStyle(
+              hint: "Email address",
+              prefix: const Icon(
+                Icons.mail_outline,
+                color: kPrimaryPurple,
                 size: 20,
               ),
-              onPressed: () {
-                setState(() {
-                  _obscurePassword = !_obscurePassword;
-                });
-              },
             ),
-          ),
-        ),
+            validator: (value) {
+              if (value == null || value.trim().isEmpty) {
+                return "Email is required";
+              }
 
-        const SizedBox(height: 8),
-        Align(
-          alignment: Alignment.centerRight,
-          child: GestureDetector(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const DonorForgotPasswordPage(),
-                ),
-              );
+              final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+
+              if (!emailRegex.hasMatch(value.trim())) {
+                return "Enter valid email";
+              }
+
+              return null;
             },
-            child: const Text(
-              "Forgot Password?",
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
+          ),
+
+          const SizedBox(height: 16),
+
+          /// PASSWORD
+          TextFormField(
+            controller: passwordController,
+            obscureText: _obscurePassword,
+            decoration: inputStyle(
+              hint: "Password",
+              prefix: const Icon(
+                Icons.lock_outline,
                 color: kPrimaryPurple,
+                size: 20,
+              ),
+              suffix: IconButton(
+                icon: Icon(
+                  _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                  color: kPrimaryPurple.withOpacity(0.7),
+                  size: 20,
+                ),
+                onPressed: () {
+                  setState(() {
+                    _obscurePassword = !_obscurePassword;
+                  });
+                },
               ),
             ),
-          ),
-        ),
-
-        const SizedBox(height: 22),
-
-        /// 🔐 EMAIL LOGIN — FIXED (LOGIC ONLY)
-        SizedBox(
-          width: double.infinity,
-          height: 54,
-          child: ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF6E5CD6),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-              elevation: 10,
-              shadowColor: kPrimaryPurple.withOpacity(0.20),
-            ),
-            onPressed: () async {
-              final user = await _auth.login(
-                emailController.text.trim(),
-                passwordController.text.trim(),
-                "Donor", // ✅ Role added for backend sync
-              );
-
-              if (user != null) {
-                final enableLocation =
-                    await showAnimatedLocationPopup(context); // ✅ RESULT USED
-
-                if (enableLocation == true) {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const DonorLocationPage(),
-                    ),
-                  );
-                } else {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const DonorInterface(),
-                    ),
-                  );
-                }
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Login failed")),
-                );
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return "Password is required";
               }
-            },
-            child: const Text(
-              "Sign In",
-              style: TextStyle(
-                color: Colors.white,
-                letterSpacing: 2,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ),
 
-        const SizedBox(height: 26),
-
-        Row(
-          children: [
-            Expanded(child: Divider(color: kPrimaryPurple.withOpacity(0.25))),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 10),
-              child: Text(
-                "OR",
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 2,
-                  color: Color(0xFF8B5CF6),
-                ),
-              ),
-            ),
-            Expanded(child: Divider(color: kPrimaryPurple.withOpacity(0.25))),
-          ],
-        ),
-
-        const SizedBox(height: 18),
-
-        /// 🔐 GOOGLE LOGIN — FIXED (LOGIC ONLY)
-        SizedBox(
-          width: double.infinity,
-          height: 54,
-          child: OutlinedButton(
-            style: OutlinedButton.styleFrom(
-              backgroundColor: Colors.white.withOpacity(0.4),
-              side: BorderSide(color: Colors.white.withOpacity(0.6)),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-            ),
-            onPressed: () async {
-              final user = await _auth
-                  .googleLogin("Donor"); // ✅ Role added for backend sync
-              if (user != null) {
-                final enableLocation =
-                    await showAnimatedLocationPopup(context); // ✅ RESULT USED
-
-                if (enableLocation == true) {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const DonorLocationPage(),
-                    ),
-                  );
-                } else {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const DonorInterface(),
-                    ),
-                  );
-                }
+              if (value.length < 6) {
+                return "Password must be at least 6 characters";
               }
+
+              return null;
             },
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Image.asset(
-                  'assets/images/google.png',
-                  height: 45,
-                  width: 45,
-                  errorBuilder: (_, __, ___) =>
-                      const Icon(Icons.error, size: 20),
-                ),
-                const SizedBox(width: 10),
-                const Text(
-                  "Continue with Google",
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: kDeepPurple,
-                    fontSize: 14,
-                  ),
-                ),
-              ],
-            ),
           ),
-        ),
 
-        const SizedBox(height: 26),
+          const SizedBox(height: 8),
 
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text(
-              "New here?",
-              style: TextStyle(fontSize: 12, color: Colors.black54),
-            ),
-            const SizedBox(width: 6),
-            GestureDetector(
+          Align(
+            alignment: Alignment.centerRight,
+            child: GestureDetector(
               onTap: () {
-                Navigator.pushReplacement(
+                Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => const DonorRegistration(),
+                    builder: (_) => const DonorForgotPasswordPage(),
                   ),
                 );
               },
               child: const Text(
-                "Create Account",
+                "Forgot Password?",
                 style: TextStyle(
                   fontSize: 12,
+                  fontWeight: FontWeight.w600,
                   color: kPrimaryPurple,
+                ),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 22),
+
+          /// 🔐 SIGN IN BUTTON (LOGIC UNCHANGED)
+          SizedBox(
+            width: double.infinity,
+            height: 54,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF6E5CD6),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                elevation: 10,
+                shadowColor: kPrimaryPurple.withOpacity(0.20),
+              ),
+              onPressed: () async {
+                if (!_formKey.currentState!.validate()) {
+                  return;
+                }
+
+                final user = await _auth.login(
+                  emailController.text.trim(),
+                  passwordController.text.trim(),
+                  "Donor",
+                );
+
+                if (user != null) {
+                  final enableLocation =
+                      await showAnimatedLocationPopup(context);
+
+                  if (enableLocation == true) {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const DonorLocationPage(),
+                      ),
+                    );
+                  } else {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const DonorInterface(),
+                      ),
+                    );
+                  }
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Login failed")),
+                  );
+                }
+              },
+              child: const Text(
+                "Sign In",
+                style: TextStyle(
+                  color: Colors.white,
+                  letterSpacing: 2,
                   fontWeight: FontWeight.bold,
                 ),
               ),
             ),
-          ],
-        ),
-      ],
+          ),
+
+          const SizedBox(height: 26),
+
+          /// OR DIVIDER (UNCHANGED)
+          Row(
+            children: [
+              Expanded(
+                child: Divider(color: kPrimaryPurple.withOpacity(0.25)),
+              ),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 10),
+                child: Text(
+                  "OR",
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 2,
+                    color: Color(0xFF8B5CF6),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: Divider(color: kPrimaryPurple.withOpacity(0.25)),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 18),
+
+          /// GOOGLE LOGIN (UNCHANGED)
+          SizedBox(
+            width: double.infinity,
+            height: 54,
+            child: OutlinedButton(
+              style: OutlinedButton.styleFrom(
+                backgroundColor: Colors.white.withOpacity(0.4),
+                side: BorderSide(color: Colors.white.withOpacity(0.6)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              ),
+              onPressed: () async {
+                final user = await _auth.googleLogin("Donor");
+
+                if (user != null) {
+                  final enableLocation =
+                      await showAnimatedLocationPopup(context);
+
+                  if (enableLocation == true) {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const DonorLocationPage(),
+                      ),
+                    );
+                  } else {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const DonorInterface(),
+                      ),
+                    );
+                  }
+                }
+              },
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Image.asset(
+                    'assets/images/google.png',
+                    height: 45,
+                    width: 45,
+                    errorBuilder: (_, __, ___) =>
+                        const Icon(Icons.error, size: 20),
+                  ),
+                  const SizedBox(width: 10),
+                  const Text(
+                    "Continue with Google",
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: kDeepPurple,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 26),
+
+          /// CREATE ACCOUNT (UNCHANGED)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text(
+                "New here?",
+                style: TextStyle(fontSize: 12, color: Colors.black54),
+              ),
+              const SizedBox(width: 6),
+              GestureDetector(
+                onTap: () {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const DonorRegistration(),
+                    ),
+                  );
+                },
+                child: const Text(
+                  "Create Account",
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: kPrimaryPurple,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

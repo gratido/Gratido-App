@@ -1,16 +1,10 @@
-// ignore_for_file: use_super_parameters, deprecated_member_use, use_build_context_synchronously
 
 import 'dart:io';
-
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
-// ✅ REQUIRED IMPORT (THIS FIXES YOUR ERROR)
 import 'package:gratido_sample/features/selection_interface/selection.dart';
-
-// ---------- PAGES ----------
 import 'pages/about_page.dart';
 import 'pages/receiver_notifications_page.dart';
 import 'pages/edit_profile_page.dart';
@@ -38,19 +32,18 @@ class _ReceiverProfilePageState extends State<ReceiverProfilePage> {
   @override
   void initState() {
     super.initState();
-    _loadProfileData(); // 🔄 Load saved data when the page opens
+    _loadProfileData();
   }
+Future<void> _loadProfileData() async {
+  final user = FirebaseAuth.instance.currentUser;
 
-  Future<void> _loadProfileData() async {
-    final prefs = await SharedPreferences.getInstance();
+  if (user != null) {
     setState(() {
-      // Fetch the values we saved in receiver_form.dart
-      receiverName = prefs.getString('receiver_name') ?? 'No name saved';
-      receiverEmail =
-          prefs.getString('receiver_email') ?? 'no-email@example.com';
-      receiverPhotoPath = prefs.getString('receiver_photo');
+      receiverName = user.displayName ?? 'No name saved';
+      receiverEmail = user.email ?? 'no-email@example.com';
     });
   }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -60,15 +53,10 @@ class _ReceiverProfilePageState extends State<ReceiverProfilePage> {
         elevation: 0,
         backgroundColor: Colors.white,
         centerTitle: true,
-
-        // ✅ ensures back + notification icons stay visible
         iconTheme: const IconThemeData(color: Colors.black),
-
-        // ✅ Material 2 + Material 3 safe (this is the key)
         titleTextStyle: const TextStyle(
-          color: Color.fromARGB(255, 78, 62, 171), // primary purple
+          color: Color.fromARGB(255, 78, 62, 171),
           fontSize: 20,
-          //fontStyle: FontStyle.italic,
           fontWeight: FontWeight.w900,
         ),
 
@@ -181,9 +169,6 @@ class _ReceiverProfilePageState extends State<ReceiverProfilePage> {
       ),
     );
   }
-
-  // ================= HEADER =================
-
   Widget _profileHeader() {
     return Row(
       children: [
@@ -212,7 +197,7 @@ class _ReceiverProfilePageState extends State<ReceiverProfilePage> {
               Text(
                 receiverName.isNotEmpty ? receiverName : 'No name saved',
                 style: const TextStyle(
-                  fontSize: 20,
+                  fontSize: 18,
                   fontWeight: FontWeight.w700,
                   color: Colors.black87,
                 ),
@@ -264,8 +249,6 @@ class _ReceiverProfilePageState extends State<ReceiverProfilePage> {
     );
   }
 
-  // ================= HELPERS =================
-
   Widget _sectionTitle(String text) {
     return Padding(
       padding: const EdgeInsets.only(left: 4, bottom: 10),
@@ -312,10 +295,6 @@ class _ReceiverProfilePageState extends State<ReceiverProfilePage> {
     );
   }
 }
-
-// ===================================================================
-// SIGN OUT DIALOG
-// ===================================================================
 
 Future<void> showReceiverSignOutDialog(
   BuildContext context, {
@@ -377,7 +356,6 @@ Future<void> showReceiverSignOutDialog(
                     Expanded(
                       child: ElevatedButton(
                         onPressed: () async {
-                          // 🔑 SENIOR FIX: Sign out of Firebase + Clear local storage
                           await FirebaseAuth.instance.signOut();
                           final prefs = await SharedPreferences.getInstance();
                           await prefs.clear();
@@ -408,10 +386,6 @@ Future<void> showReceiverSignOutDialog(
   );
 }
 
-// ===================================================================
-// DELETE ACCOUNT DIALOG (FINAL & WORKING)
-// ===================================================================
-
 Future<void> showDeleteAccountDialog(BuildContext context) async {
   const Color primaryPurple = Color(0xFF7C3AED);
   const Color dangerRed = Color(0xFFDC2626);
@@ -433,9 +407,9 @@ Future<void> showDeleteAccountDialog(BuildContext context) async {
           opacity: anim.value,
           child: Center(
             child: Container(
-              width: dialogWidth, // ✅ SAME AS LOCATION POPUP
+              width: dialogWidth, 
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(22), // ✅ SAME
+                borderRadius: BorderRadius.circular(22), 
                 boxShadow: [
                   BoxShadow(
                     color: primaryPurple.withOpacity(0.22),
@@ -447,12 +421,11 @@ Future<void> showDeleteAccountDialog(BuildContext context) async {
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(22),
                 child: Container(
-                  padding: const EdgeInsets.fromLTRB(18, 16, 18, 18), // compact
+                  padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
                   color: Colors.white,
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // ICON + GLOW (UNCHANGED FROM DELETE POPUP)
                       SizedBox(
                         width: 60,
                         height: 60,
@@ -491,8 +464,6 @@ Future<void> showDeleteAccountDialog(BuildContext context) async {
                       ),
 
                       const SizedBox(height: 10),
-
-                      // ✅ TITLE — EXACT SAME SYSTEM AS LOCATION POPUP
                       Text(
                         'Delete your account?',
                         textAlign: TextAlign.center,
@@ -503,8 +474,6 @@ Future<void> showDeleteAccountDialog(BuildContext context) async {
                       ),
 
                       const SizedBox(height: 6),
-
-                      // ✅ SUBTEXT — SAME BASE, SIZE −1
                       RichText(
                         textAlign: TextAlign.center,
                         text: TextSpan(
@@ -532,9 +501,6 @@ Future<void> showDeleteAccountDialog(BuildContext context) async {
                       ),
 
                       const SizedBox(height: 18),
-
-                      // BUTTONS — UNCHANGED STRUCTURE FROM DELETE POPUP
-                      // ✅ BUTTONS — EXACTLY MATCH OLD DELETE POPUP
                       Row(
                         children: [
                           Expanded(

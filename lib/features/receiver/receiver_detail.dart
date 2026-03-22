@@ -3,10 +3,10 @@
 
 import 'package:flutter/material.dart';
 import 'receiver_tracking.dart';
-
-// ✅ NEW IMPORT
 import 'models/food_item.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:http/http.dart' as http;
+import 'package:firebase_auth/firebase_auth.dart';
 
 /// GRATIDO THEME
 const Color primary = Color(0xFF6E5CD6);
@@ -24,7 +24,6 @@ class ReceiverDetailPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // ✅ SAME DATA, JUST FROM MODEL
     final title = item.title;
     final category = item.category;
     final location = item.location;
@@ -33,14 +32,9 @@ class ReceiverDetailPage extends StatelessWidget {
     final expiry = item.expiry;
     final List<String> images = item.images;
 
-    final String donorNotes =
-        'Weekend Food Pack – contains various items suitable for a family meal. '
-        'Please bring your own containers if possible.';
-
+    final notes = item.notes;
     return Scaffold(
       backgroundColor: softBg,
-
-      // ✅ TOP BAR (UNCHANGED)
       appBar: AppBar(
         elevation: 0,
         backgroundColor: Colors.white,
@@ -53,12 +47,11 @@ class ReceiverDetailPage extends StatelessWidget {
           ),
         ),
       ),
-
       body: SingleChildScrollView(
         padding: const EdgeInsets.only(bottom: 24),
         child: Column(
           children: [
-            /// IMAGE (TAP → FULLSCREEN)
+            /// IMAGE
             GestureDetector(
               onTap: images.isNotEmpty
                   ? () => _openImagePreview(context, images.first)
@@ -67,10 +60,7 @@ class ReceiverDetailPage extends StatelessWidget {
                 height: 300,
                 width: double.infinity,
                 child: images.isNotEmpty
-                    ? Image.asset(
-                        images.first,
-                        fit: BoxFit.cover,
-                      )
+                    ? _buildImage(images.first)
                     : Container(
                         decoration: const BoxDecoration(
                           gradient: LinearGradient(
@@ -171,18 +161,20 @@ class ReceiverDetailPage extends StatelessWidget {
                       _row('Location', location),
                       _row('Pickup Window', 'Within 30 mins'),
                       const SizedBox(height: 12),
-                      _contactDonorButton(),
+                      _contactDonorButton(context),
                     ],
                   ),
 
                   const SizedBox(height: 16),
 
                   /// DONOR NOTES
-                  _donorNotesCard(donorNotes),
+                  if (notes.trim().isNotEmpty) ...[
+                    _donorNotesCard(notes),
+                  ],
 
                   const SizedBox(height: 24),
 
-                  /// REQUEST PICKUP
+                  /// CONFIRM PICKUP BUTTON
                   _requestPickupButton(context),
                 ],
               ),
@@ -193,7 +185,33 @@ class ReceiverDetailPage extends StatelessWidget {
     );
   }
 
-  // ================= FULLSCREEN IMAGE =================
+  Widget _buildImage(String path) {
+    final bool isWeb =
+        path.startsWith('http://') || path.startsWith('https://');
+
+    if (isWeb) {
+      return Image.network(
+        path,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return Container(
+            color: Colors.grey.shade200,
+            alignment: Alignment.center,
+            child: const Icon(
+              Icons.broken_image,
+              size: 60,
+              color: Colors.grey,
+            ),
+          );
+        },
+      );
+    }
+
+    return Image.asset(
+      path,
+      fit: BoxFit.cover,
+    );
+  }
 
   void _openImagePreview(BuildContext context, String imagePath) {
     showDialog(
@@ -208,7 +226,9 @@ class ReceiverDetailPage extends StatelessWidget {
                 child: InteractiveViewer(
                   minScale: 1,
                   maxScale: 4,
-                  child: Image.asset(imagePath),
+                  child: imagePath.startsWith('http')
+                      ? Image.network(imagePath)
+                      : Image.asset(imagePath),
                 ),
               ),
               Positioned(
@@ -225,8 +245,6 @@ class ReceiverDetailPage extends StatelessWidget {
       },
     );
   }
-
-  // ================= UI HELPERS (UNCHANGED) =================
 
   Widget _card({required Widget child}) {
     return Container(
@@ -282,18 +300,28 @@ class ReceiverDetailPage extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
+            flex: 4,
             child: Text(
               label,
-              style: const TextStyle(fontSize: 13, color: Colors.black54),
+              style: const TextStyle(
+                fontSize: 13,
+                color: Colors.black54,
+              ),
             ),
           ),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
+          Expanded(
+            flex: 6,
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+              softWrap: true,
             ),
           ),
         ],
@@ -340,14 +368,11 @@ class ReceiverDetailPage extends StatelessWidget {
         phoneUri,
         mode: LaunchMode.externalApplication,
       );
-    } else {
-      debugPrint('Could not launch dialer');
     }
   }
 
-  Widget _contactDonorButton() {
-    const String donorPhone =
-        '+919876543210'; // replace with real number from model
+  Widget _contactDonorButton(BuildContext context) {
+    final String donorPhone = item.phone; // MUST match your FoodItem model
 
     return SizedBox(
       width: double.infinity,
@@ -414,45 +439,50 @@ class ReceiverDetailPage extends StatelessWidget {
     return SizedBox(
       height: 56,
       width: double.infinity,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [primary, Color(0xFF8A79E8)],
-          ),
-          borderRadius: BorderRadius.circular(28),
-          boxShadow: [
-            BoxShadow(
-              color: primary.withOpacity(0.35),
-              blurRadius: 16,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: ElevatedButton.icon(
-          onPressed: () {
-            if (onConfirmPickup != null) onConfirmPickup!();
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => const ReceiverTrackingPage(),
-              ),
+      child: ElevatedButton.icon(
+        onPressed: () async {
+          const String laptopIp = "192.168.0.5";
+
+          try {
+            final token = await FirebaseAuth.instance.currentUser?.getIdToken();
+
+            final response = await http.post(
+              Uri.parse('http://$laptopIp:5227/api/Donation/accept/${item.id}'),
+              headers: {
+                'Authorization': 'Bearer $token',
+                'Content-Type': 'application/json',
+              },
             );
-          },
-          icon: const Icon(Icons.volunteer_activism),
-          label: const Text(
-            'Request Pickup',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.transparent,
-            shadowColor: Colors.transparent,
-            foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(28),
-            ),
+
+            if (response.statusCode == 200) {
+              if (onConfirmPickup != null) {
+                onConfirmPickup!();
+              }
+
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => ReceiverTrackingPage(item: item),
+                ),
+              );
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                    content: Text("Pickup failed: ${response.statusCode}")),
+              );
+            }
+          } catch (e) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text("Error: $e")),
+            );
+          }
+        },
+        icon: const Icon(Icons.volunteer_activism),
+        label: const Text(
+          'Confirm Pickup',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
           ),
         ),
       ),

@@ -19,7 +19,7 @@ class WrapperClass extends StatelessWidget {
 
       // ✅ SENIOR FIX: Added 5-second timeout so it doesn't buffer forever
       final response = await http.get(
-        Uri.parse('http://192.168.0.4:5227/api/Receiver/my-profile'),
+        Uri.parse('http://192.168.0.5:5227/api/Receiver/my-profile'),
         headers: {'Authorization': 'Bearer $token'},
       ).timeout(const Duration(seconds: 5));
 
@@ -28,8 +28,7 @@ class WrapperClass extends StatelessWidget {
         return decoded['data'] as Map<String, dynamic>?;
       }
     } catch (e) {
-      debugPrint(
-          "⚠️ Connection Timeout/Error: Ensure Backend is running at 192.168.0.4");
+      debugPrint("⚠️ Connection Timeout/Error: Ensure Backend is running at ");
     }
     return null;
   }

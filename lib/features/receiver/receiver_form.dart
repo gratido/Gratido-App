@@ -1,5 +1,3 @@
-// lib/features/receiver/receiver_form.dart
-// ignore_for_file: use_super_parameters, deprecated_member_use
 
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -7,13 +5,13 @@ import 'package:file_picker/file_picker.dart';
 import 'package:latlong2/latlong.dart';
 import 'address_picker.dart';
 import 'address_pick_result.dart' show AddressPickResult;
-import 'dart:convert'; // ✅ Fixes 'jsonEncode' error
-import 'package:supabase_flutter/supabase_flutter.dart'; // ✅ Fixes 'Supabase' error
-import 'package:http/http.dart' as http; // ✅ Required for backend API call
-import 'package:firebase_auth/firebase_auth.dart'; // ✅ Required for Token retrieval
-import 'package:shared_preferences/shared_preferences.dart'; // ✅ For local storage of name/email
-
-/// 💜 GRATIDO COLOR TOKENS
+import 'dart:convert'; 
+import 'package:supabase_flutter/supabase_flutter.dart'; 
+import 'package:http/http.dart' as http; 
+import 'package:firebase_auth/firebase_auth.dart'; 
+import 'package:shared_preferences/shared_preferences.dart'; 
+import 'package:flutter/services.dart';
+import 'receiver_home.dart';
 
 const Color kAccentViolet = Color(0xFF6A4CFF);
 const Color kCardWhite = Colors.white;
@@ -60,6 +58,8 @@ class _ReceiverFormPageState extends State<ReceiverFormPage>
   final TextEditingController _emailCtrl = TextEditingController();
   final TextEditingController _aboutCtrl = TextEditingController();
   final TextEditingController _websiteCtrl = TextEditingController();
+  final FocusNode _mobileFocusNode = FocusNode();
+  bool _mobileFieldUnfocused = false;
 
   String? _pickedAddressLine1;
   String? _pickedAddressLine2;
@@ -79,6 +79,13 @@ class _ReceiverFormPageState extends State<ReceiverFormPage>
     _tabController.addListener(() {
       if (mounted) setState(() {});
     });
+    _mobileFocusNode.addListener(() {
+      if (!_mobileFocusNode.hasFocus) {
+        setState(() {
+          _mobileFieldUnfocused = true;
+        });
+      }
+    });
   }
 
   @override
@@ -91,6 +98,7 @@ class _ReceiverFormPageState extends State<ReceiverFormPage>
     _emailCtrl.dispose();
     _aboutCtrl.dispose();
     _websiteCtrl.dispose();
+    _mobileFocusNode.dispose();
     super.dispose();
   }
 
@@ -128,8 +136,6 @@ class _ReceiverFormPageState extends State<ReceiverFormPage>
     }
     return true;
   }
-
-  // ---------------- DOCUMENT LOGIC ----------------
 
   List<String> _docLabelsForType(ReceiverType? type) {
     if (type == ReceiverType.general) return ['Aadhaar card'];
@@ -212,6 +218,7 @@ class _ReceiverFormPageState extends State<ReceiverFormPage>
   }
 
   // ✅ UPDATED SUBMISSION: Handles unique file names and backend sync
+  // ✅ UPDATED VERSION FOR SECTION 4 COMPATIBILITY
   Future<void> _onSubmit() async {
     if (!_basicDetailsValid) {
       _showSnack('Please complete all details.');
@@ -240,14 +247,12 @@ class _ReceiverFormPageState extends State<ReceiverFormPage>
       // 1. 📤 Upload to Supabase 'receiver-documents' bucket
       for (var entry in _selectedDocuments.entries) {
         if (entry.value != null) {
-          // Detect actual file extension (pdf, jpg, etc.)
           final fileExt = entry.value!.path.split('.').last;
-
-          // Construct unique filename: UserID + Timestamp + Label
           final fileName =
               '${uid}_${DateTime.now().millisecondsSinceEpoch}_${entry.key.replaceAll(' ', '_')}.$fileExt';
 
-          // Uploading to bucket 'receiver-documents'
+          print("🚀 Uploading to Supabase: $fileName");
+
           await supabase.storage
               .from('receiver-documents')
               .upload(fileName, entry.value!);
@@ -261,20 +266,23 @@ class _ReceiverFormPageState extends State<ReceiverFormPage>
         }
       }
 
-      // 2. 🚀 Call C# Backend API (IP: 192.168.0.4)
+      // 2. 🚀 Call C# Backend API
+      final fullAddress = "$_pickedAddressLine1, $_pickedAddressLine2";
       final registrationData = {
         "organizationName":
             _isGeneralPublic ? _fullNameCtrl.text : _registeredNameCtrl.text,
         "organizationType": _receiverType.toString().split('.').last,
         "description": _aboutCtrl.text,
-        "address": "$_pickedAddressLine1, $_pickedAddressLine2",
+        "address": fullAddress,
         "latitude": _pickedLatLng?.latitude ?? 17.447,
         "longitude": _pickedLatLng?.longitude ?? 78.548,
         "documentUrls": uploadedUrls,
       };
 
+      print("📡 Sending data to Backend (192.168.0.5)...");
+
       final response = await http.post(
-        Uri.parse('http://192.168.0.4:5227/api/Receiver/register-ngo'),
+        Uri.parse('http://192.168.0.5:5227/api/Receiver/register-ngo'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -283,22 +291,31 @@ class _ReceiverFormPageState extends State<ReceiverFormPage>
       );
 
       if (response.statusCode == 200) {
-        // 💾 SENIOR FIX: Save name and email locally so Profile Page can read them
+        // 💾 Save to local preferences for Profile UI
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('receiver_name', _fullNameCtrl.text);
         await prefs.setString('receiver_email', _emailCtrl.text);
+        await prefs.setString('receiver_address', fullAddress);
 
-        _showSnack('Submitted! Waiting for Admin verification.');
+        print("✅ Backend Sync Success!");
 
-        // Brief delay so the user sees the confirmation
-        await Future.delayed(const Duration(seconds: 1));
-        Navigator.of(context).pushReplacementNamed('/receiver');
+        // 🚀 Navigate to Home and pass the real location data
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (context) => ReceiverHomePage(
+              isVerified: false, // Initially false until admin approves
+              address: fullAddress,
+              lat: _pickedLatLng?.latitude ?? 17.447,
+              lng: _pickedLatLng?.longitude ?? 78.548,
+            ),
+          ),
+        );
       } else {
-        print("🔴 Backend returned error: ${response.body}");
-        throw Exception("Server Error: ${response.body}");
+        print("🔴 Backend Error: ${response.body}");
+        throw Exception("Server Error: ${response.statusCode}");
       }
     } catch (e) {
-      print("❌ Error during submission: $e");
+      print("❌ Submission Failed: $e");
       _showSnack('Error: $e');
     } finally {
       setState(() => _isSubmitting = false);
@@ -323,6 +340,12 @@ class _ReceiverFormPageState extends State<ReceiverFormPage>
                 labelColor: kAccentViolet,
                 unselectedLabelColor: kTextSecondary,
                 indicatorColor: kAccentViolet,
+                onTap: (index) {
+                  if (index == 1 && !_basicDetailsValid) {
+                    _showSnack("Please complete Basic Details first");
+                    _tabController.animateTo(0);
+                  }
+                },
                 tabs: const [
                   Tab(text: 'Basic details'),
                   Tab(text: 'Documents'),
@@ -567,9 +590,11 @@ class _ReceiverFormPageState extends State<ReceiverFormPage>
     );
   }
 
-  Widget _sectionTitle(String title) => Text(title,
-      style: const TextStyle(
-          fontSize: 16, fontWeight: FontWeight.w700, color: kTextPrimary));
+  Widget _sectionTitle(String title) => Text(
+        title,
+        style: const TextStyle(
+            fontSize: 16, fontWeight: FontWeight.w700, color: kTextPrimary),
+      );
 
   Widget _textField(String label, TextEditingController ctrl,
       {String? helper, bool disabled = false}) {
@@ -577,8 +602,13 @@ class _ReceiverFormPageState extends State<ReceiverFormPage>
       disabled: disabled,
       child: TextFormField(
         controller: ctrl,
+        onChanged: (_) => setState(() {}),
         decoration: InputDecoration(
-            labelText: label, helperText: helper, border: InputBorder.none),
+          labelText: label,
+          helperText: helper,
+          border: InputBorder.none,
+          labelStyle: const TextStyle(fontSize: 14),
+        ),
       ),
     );
   }
@@ -591,7 +621,11 @@ class _ReceiverFormPageState extends State<ReceiverFormPage>
         controller: ctrl,
         minLines: 3,
         maxLines: 6,
-        decoration: InputDecoration(labelText: label, border: InputBorder.none),
+        decoration: InputDecoration(
+          labelText: label,
+          border: InputBorder.none,
+          labelStyle: const TextStyle(fontSize: 14),
+        ),
       ),
     );
   }
@@ -603,14 +637,59 @@ class _ReceiverFormPageState extends State<ReceiverFormPage>
       child: TextFormField(
         controller: ctrl,
         keyboardType: TextInputType.number,
-        decoration: InputDecoration(labelText: label, border: InputBorder.none),
+        decoration: InputDecoration(
+          labelText: label,
+          border: InputBorder.none,
+          labelStyle: const TextStyle(fontSize: 14),
+        ),
       ),
     );
   }
 
-  Widget _phoneField(String label, TextEditingController ctrl) =>
-      _textField(label, ctrl);
+  Widget _phoneField(String label, TextEditingController ctrl) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _cardField(
+          child: TextFormField(
+            controller: ctrl,
+            onChanged: (_) => setState(() {}),
+            focusNode: _mobileFocusNode,
+            keyboardType: TextInputType.number,
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly,
+              LengthLimitingTextInputFormatter(10),
+            ],
+            decoration: const InputDecoration(
+              border: InputBorder.none,
+              labelStyle: TextStyle(fontSize: 14),
+            ).copyWith(labelText: label),
+          ),
+        ),
+        if (_mobileFieldUnfocused &&
+            ctrl.text.isNotEmpty &&
+            ctrl.text.length != 10)
+          const Padding(
+            padding: EdgeInsets.only(left: 12, top: 6),
+            child: Text(
+              "Mobile number must be exactly 10 digits",
+              style: TextStyle(color: Colors.red, fontSize: 12),
+            ),
+          ),
+      ],
+    );
+  }
 
-  Widget _emailField(String label, TextEditingController ctrl) =>
-      _textField(label, ctrl);
+  Widget _emailField(String label, TextEditingController ctrl) {
+    return _cardField(
+      child: TextFormField(
+        controller: ctrl,
+        onChanged: (_) => setState(() {}),
+        decoration: const InputDecoration(
+          border: InputBorder.none,
+          labelStyle: TextStyle(fontSize: 14),
+        ).copyWith(labelText: label),
+      ),
+    );
+  }
 }

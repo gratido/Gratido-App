@@ -19,18 +19,30 @@ class _DonationDetailState extends State<DonationDetail> {
   //bool get _isPackedFood => widget.donation.category == 'Packed Food';
 
   Widget _buildImage(String path) {
-    if (path.startsWith('assets/')) {
-      return Image.asset(path, fit: BoxFit.cover);
-    }
-    final file = File(path);
-    if (!file.existsSync()) {
-      return Container(
-        color: Colors.grey[200],
-        child: const Icon(Icons.image_not_supported),
-      );
-    }
-    return Image.file(file, fit: BoxFit.cover);
+  if (path.startsWith('http')) {
+    return Image.network(
+      path,
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) {
+        return const Center(
+          child: Icon(Icons.broken_image, size: 40),
+        );
+      },
+    );
+  } else if (path.startsWith('assets/')) {
+    return Image.asset(path, fit: BoxFit.cover);
+  } else {
+    return Image.file(
+      File(path),
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) {
+        return const Center(
+          child: Icon(Icons.broken_image, size: 40),
+        );
+      },
+    );
   }
+}
 
   void _openFullscreen(String path) {
     Navigator.push(

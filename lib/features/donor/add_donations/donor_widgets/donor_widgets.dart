@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import '../controllers/contact_controller.dart';
 import '../controllers/food_controller.dart';
+import 'package:flutter/services.dart';
 
 const Color kPrimary = Color(0xFF6E5CD6);
 
@@ -27,8 +28,6 @@ class ContactSection extends StatelessWidget {
   final GlobalKey<FormState> formKey;
   final VoidCallback onContinue;
   final Future<void> Function() openMapPicker;
-
-  /// NEW: optional callback for the top-right Edit button
   final VoidCallback? onEditAccount;
 
   const ContactSection({
@@ -37,7 +36,7 @@ class ContactSection extends StatelessWidget {
     required this.formKey,
     required this.onContinue,
     required this.openMapPicker,
-    this.onEditAccount, // optional: if provided, shows "Edit" button at top-right
+    this.onEditAccount,
   });
 
   @override
@@ -45,21 +44,18 @@ class ContactSection extends StatelessWidget {
     return SafeArea(
       child: Stack(
         children: [
-          // Base purple gradient background
           Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  Color(0xFFF1EEFF), // stronger lavender tint
+                  Color(0xFFF1EEFF),
                   Color(0xFFFFFFFF),
                 ],
               ),
             ),
           ),
-
-          // Actual content
           SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
             child: Form(
@@ -67,7 +63,6 @@ class ContactSection extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Header row
                   Row(
                     children: [
                       const Expanded(
@@ -76,7 +71,6 @@ class ContactSection extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.w700,
-                            letterSpacing: -0.2,
                           ),
                         ),
                       ),
@@ -85,8 +79,6 @@ class ContactSection extends StatelessWidget {
                           onPressed: onEditAccount,
                           style: TextButton.styleFrom(
                             foregroundColor: const Color(0xFF6E5CD6),
-                            textStyle:
-                                const TextStyle(fontWeight: FontWeight.w600),
                           ),
                           child: const Text("Edit"),
                         ),
@@ -95,6 +87,7 @@ class ContactSection extends StatelessWidget {
 
                   const SizedBox(height: 24),
 
+                  /// FULL NAME
                   _fieldLabel("Full name / Organization"),
                   const SizedBox(height: 8),
                   _styledInput(
@@ -105,49 +98,18 @@ class ContactSection extends StatelessWidget {
                   ),
 
                   const SizedBox(height: 20),
-                  _fieldLabel("Phone number"),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 14,
-                        ),
-                        decoration: _boxDecoration(),
-                        child: Row(
-                          children: const [
-                            Text("🇮🇳", style: TextStyle(fontSize: 18)),
-                            SizedBox(width: 6),
-                            Text(
-                              "+91",
-                              style: TextStyle(fontWeight: FontWeight.w600),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _styledInput(
-                          controller: controller.phoneController,
-                          hint: "Enter your number",
-                          keyboardType: TextInputType.phone,
-                          validator: (v) => (v == null || v.trim().length < 10)
-                              ? 'Invalid number'
-                              : null,
-                        ),
-                      ),
-                    ],
-                  ),
 
-                  const SizedBox(height: 20),
-                  _fieldLabel("Pickup location"),
+                  /// PHONE
+                  _fieldLabel("Phone number"),
                   const SizedBox(height: 8),
 
                   FormField<String>(
-                    validator: (_) {
-                      if (controller.pickupController.text.trim().isEmpty) {
-                        return 'Pickup location is required';
+                    validator: (v) {
+                      if (v == null || v.trim().isEmpty) {
+                        return 'Phone number required';
+                      }
+                      if (v.trim().length != 10) {
+                        return 'Mobile number must be exactly 10 digits';
                       }
                       return null;
                     },
@@ -157,21 +119,127 @@ class ContactSection extends StatelessWidget {
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 14,
+                                ),
+                                decoration: _boxDecoration(),
+                                child: Row(
+                                  children: const [
+                                    Text("🇮🇳",
+                                        style: TextStyle(fontSize: 18)),
+                                    SizedBox(width: 6),
+                                    Text("+91",
+                                        style: TextStyle(
+                                            fontWeight: FontWeight.w600)),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Container(
+                                  decoration: _boxDecoration().copyWith(
+                                    border: hasError
+                                        ? Border.all(
+                                            color: Colors.red.shade400)
+                                        : null,
+                                  ),
+                                  child: TextField(
+                                    controller:
+                                        controller.phoneController,
+                                    focusNode:
+                                        controller.phoneFocusNode,
+                                    keyboardType:
+                                        TextInputType.number,
+                                    inputFormatters: [
+                                      FilteringTextInputFormatter
+                                          .digitsOnly,
+                                      LengthLimitingTextInputFormatter(
+                                          10),
+                                    ],
+                                    onChanged: (value) {
+                                      state.didChange(value);
+                                    },
+                                    decoration: const InputDecoration(
+                                      hintText:
+                                          "Enter your number",
+                                      border: InputBorder.none,
+                                      contentPadding:
+                                          EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 14,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          if (hasError) ...[
+                            const SizedBox(height: 6),
+                            Padding(
+                              padding:
+                                  const EdgeInsets.only(left: 8),
+                              child: Text(
+                                state.errorText!,
+                                style: const TextStyle(
+                                  color: Colors.red,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      );
+                    },
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  /// PICKUP LOCATION
+                  _fieldLabel("Pickup location"),
+                  const SizedBox(height: 8),
+
+                  FormField<String>(
+                    validator: (_) {
+                      if (controller.pickupController.text
+                          .trim()
+                          .isEmpty) {
+                        return 'Pickup location is required';
+                      }
+                      return null;
+                    },
+                    builder: (state) {
+                      final hasError = state.hasError;
+
+                      return Column(
+                        crossAxisAlignment:
+                            CrossAxisAlignment.start,
+                        children: [
                           InkWell(
                             onTap: () async {
                               await openMapPicker();
-                              state.didChange(controller.pickupController.text);
+                              state.didChange(
+                                  controller.pickupController.text);
                             },
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius:
+                                BorderRadius.circular(16),
                             child: Container(
-                              decoration: _boxDecoration().copyWith(
+                              decoration:
+                                  _boxDecoration().copyWith(
                                 border: hasError
                                     ? Border.all(
-                                        color: Colors.red.shade400,
+                                        color:
+                                            Colors.red.shade400,
                                       )
                                     : null,
                               ),
-                              padding: const EdgeInsets.symmetric(
+                              padding:
+                                  const EdgeInsets.symmetric(
                                 horizontal: 12,
                                 vertical: 14,
                               ),
@@ -179,12 +247,19 @@ class ContactSection extends StatelessWidget {
                                 children: [
                                   Expanded(
                                     child: Text(
-                                      controller.pickupController.text.isEmpty
+                                      controller
+                                              .pickupController
+                                              .text
+                                              .isEmpty
                                           ? "Tap to pick from map"
-                                          : controller.pickupController.text,
+                                          : controller
+                                              .pickupController
+                                              .text,
                                       style: TextStyle(
                                         color: controller
-                                                .pickupController.text.isEmpty
+                                                .pickupController
+                                                .text
+                                                .isEmpty
                                             ? Colors.grey
                                             : Colors.black,
                                       ),
@@ -201,7 +276,8 @@ class ContactSection extends StatelessWidget {
                           if (hasError) ...[
                             const SizedBox(height: 6),
                             Padding(
-                              padding: const EdgeInsets.only(left: 8),
+                              padding:
+                                  const EdgeInsets.only(left: 8),
                               child: Text(
                                 state.errorText!,
                                 style: const TextStyle(
@@ -217,21 +293,27 @@ class ContactSection extends StatelessWidget {
                   ),
 
                   const SizedBox(height: 30),
+
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
                       onPressed: onContinue,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF6E5CD6),
+                        backgroundColor:
+                            const Color(0xFF6E5CD6),
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        padding:
+                            const EdgeInsets.symmetric(
+                                vertical: 16),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius:
+                              BorderRadius.circular(16),
                         ),
                       ),
                       child: const Text(
                         "Continue",
-                        style: TextStyle(fontSize: 16),
+                        style:
+                            TextStyle(fontSize: 16),
                       ),
                     ),
                   ),
@@ -245,35 +327,71 @@ class ContactSection extends StatelessWidget {
   }
 
   Widget _fieldLabel(String t) =>
-      Text(t, style: const TextStyle(fontWeight: FontWeight.w600));
+      Text(t,
+          style:
+              const TextStyle(fontWeight: FontWeight.w600));
 
   Widget _styledInput({
     required TextEditingController controller,
     required String hint,
-    TextInputType keyboardType = TextInputType.text,
+    TextInputType keyboardType =
+        TextInputType.text,
     String? Function(String?)? validator,
-    Widget? suffix,
   }) {
-    return Container(
-      decoration: _boxDecoration(),
-      child: TextFormField(
-        controller: controller,
-        keyboardType: keyboardType,
-        validator: validator,
-        decoration: InputDecoration(
-          hintText: hint,
-          suffixIcon: suffix,
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 12,
-            vertical: 14,
-          ),
-        ),
-      ),
+    return FormField<String>(
+      validator: validator,
+      builder: (state) {
+        final hasError = state.hasError;
+
+        return Column(
+          crossAxisAlignment:
+              CrossAxisAlignment.start,
+          children: [
+            Container(
+              decoration:
+                  _boxDecoration().copyWith(
+                border: hasError
+                    ? Border.all(
+                        color: Colors.red.shade400)
+                    : null,
+              ),
+              child: TextField(
+                controller: controller,
+                keyboardType: keyboardType,
+                onChanged: (value) {
+                  state.didChange(value);
+                },
+                decoration: InputDecoration(
+                  hintText: hint,
+                  border: InputBorder.none,
+                  contentPadding:
+                      const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 14,
+                  ),
+                ),
+              ),
+            ),
+            if (hasError) ...[
+              const SizedBox(height: 6),
+              Padding(
+                padding:
+                    const EdgeInsets.only(left: 8),
+                child: Text(
+                  state.errorText!,
+                  style: const TextStyle(
+                    color: Colors.red,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        );
+      },
     );
   }
 }
-
 /// ------------------------------
 /// FOOD SECTION START (unchanged)
 /// ------------------------------

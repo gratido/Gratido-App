@@ -5,11 +5,15 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http; // ✅ Added for API calls
 import 'package:firebase_auth/firebase_auth.dart'; // ✅ Added for Token
 import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+// ✅ Added for Map Coordinates
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'dart:io';
 
 class FoodController with ChangeNotifier {
   // ---- API CONFIG ----
   // 🚨 IMPORTANT: Change this to your laptop's IP address (from ipconfig)
-  static const String baseUrl = 'http://192.168.0.4/api';
+  static const String baseUrl = 'http://192.168.0.5/api';
 
   // ---- LOADING STATE ----
   bool isLoading = false; // ✅ Added to manage UI loading state
@@ -81,23 +85,48 @@ class FoodController with ChangeNotifier {
 
     try {
       final token = await FirebaseAuth.instance.currentUser?.getIdToken();
+      final prefs = await SharedPreferences.getInstance();
 
-      // 🚨 PORT FIX: Ensuring 5227 is used for the physical phone connection
-      final url = Uri.parse('http://192.168.0.4:5227/api/Donation/create');
+      final double latitude = prefs.getDouble('donor_lat') ?? 0.0;
+      final double longitude = prefs.getDouble('donor_lng') ?? 0.0;
+
+      print("📍 Sending Latitude: $latitude");
+      print("📍 Sending Longitude: $longitude");
+
+      final supabase = Supabase.instance.client;
+      final List<String> uploadedUrls = [];
+
+      // ✅ UPLOAD IMAGES TO SUPABASE
+      for (final path in photoPaths) {
+        final file = File(path);
+        final fileName =
+            "${DateTime.now().millisecondsSinceEpoch}_${path.split('/').last}";
+
+        await supabase.storage.from('donation-images').upload(fileName, file);
+
+        final publicUrl =
+            supabase.storage.from('donation-images').getPublicUrl(fileName);
+
+        uploadedUrls.add(publicUrl);
+        print("🖼 Uploaded: $publicUrl");
+      }
+
+      final url = Uri.parse('http://192.168.0.5:5227/api/Donation/create');
 
       final Map<String, dynamic> donationData = {
         "foodTitle": foodName,
         "category": category,
         "quantity": quantity.toString(),
-        "preparedTime": preparedSelected ?? "Not Specified", // ✨ FIXES DETAILS
-        "donorPhone": donorPhone, // 📞 REAL MANUAL PHONE
+        "preparedTime": preparedSelected ?? "Not Specified",
+        "donorPhone": donorPhone,
         "pickupWindow": pickupWindow ?? "ASAP",
         "expiryDate":
             (expiryDateObj ?? DateTime.now().add(const Duration(days: 1)))
-                .toIso8601String(), // 📅 Sending real ISO date
-        "latitude": 12.9716, "longitude": 77.5946,
-        "addressText": addressText, // 📍 REAL MANUAL ADDRESS
-        "imageUrls": photoPaths,
+                .toIso8601String(),
+        "latitude": latitude,
+        "longitude": longitude,
+        "addressText": addressText,
+        "imageUrls": uploadedUrls,
       };
 
       final response = await http.post(
@@ -112,7 +141,7 @@ class FoodController with ChangeNotifier {
       print("📡 SERVER RESPONSE: ${response.statusCode}");
       return response.statusCode == 200;
     } catch (e) {
-      print("❌ CONNECTION FAILED: $e");
+      print("❌ IMAGE UPLOAD FAILED: $e");
       return false;
     } finally {
       isLoading = false;

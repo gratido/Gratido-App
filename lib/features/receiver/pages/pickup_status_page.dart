@@ -15,21 +15,17 @@ class PickupStatusPage extends StatelessWidget {
       backgroundColor: bgLight,
       body: Stack(
         children: [
-          /// MAP SECTION
           SizedBox(
             height: MediaQuery.of(context).size.height * 0.45,
             width: double.infinity,
             child: Stack(
               children: [
-                /// Map image (replace with GoogleMap later)
                 Image.network(
                   'https://maps.googleapis.com/maps/api/staticmap'
                   '?center=San+Francisco&zoom=12&size=800x800',
                   fit: BoxFit.cover,
                   width: double.infinity,
                 ),
-
-                /// Gradient overlay
                 Container(
                   decoration: const BoxDecoration(
                     gradient: LinearGradient(
@@ -42,8 +38,6 @@ class PickupStatusPage extends StatelessWidget {
                     ),
                   ),
                 ),
-
-                /// Back button + title
                 SafeArea(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -67,18 +61,14 @@ class PickupStatusPage extends StatelessWidget {
                     ),
                   ),
                 ),
-
-                /// Pulsing map pin
                 Positioned(
                   bottom: 50,
                   left: MediaQuery.of(context).size.width / 2 - 32,
-                  child: _PulsingPin(),
+                  child: const _PulsingPin(),
                 ),
               ],
             ),
           ),
-
-          /// BOTTOM SHEET CONTENT
           Positioned.fill(
             top: MediaQuery.of(context).size.height * 0.40,
             child: Container(
@@ -98,20 +88,9 @@ class PickupStatusPage extends StatelessWidget {
               ),
               child: SingleChildScrollView(
                 child: Column(
-                  children: [
-                    /// Drag handle
-                    Container(
-                      width: 48,
-                      height: 5,
-                      margin: const EdgeInsets.only(bottom: 16),
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade300,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-
-                    /// ETA
-                    const Text(
+                  children: const [
+                    SizedBox(height: 16),
+                    Text(
                       'ESTIMATED ARRIVAL',
                       style: TextStyle(
                         color: primary,
@@ -120,28 +99,19 @@ class PickupStatusPage extends StatelessWidget {
                         letterSpacing: 1.4,
                       ),
                     ),
-                    const SizedBox(height: 6),
-                    const Text(
+                    SizedBox(height: 6),
+                    Text(
                       '15 Minutes',
                       style: TextStyle(
                         fontSize: 32,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
-
-                    const SizedBox(height: 28),
-
-                    /// STATUS STEPPER
-                    const _StatusStepper(),
-
-                    const SizedBox(height: 24),
-
-                    /// DRIVER CARD
+                    SizedBox(height: 28),
+                    _StatusStepper(),
+                    SizedBox(height: 24),
                     _DriverCard(),
-
-                    const SizedBox(height: 24),
-
-                    /// DONATION DETAILS
+                    SizedBox(height: 24),
                     _DonationDetails(),
                   ],
                 ),
@@ -154,9 +124,7 @@ class PickupStatusPage extends StatelessWidget {
   }
 }
 
-/// ------------------------------------------------------------
 /// STATUS STEPPER
-/// ------------------------------------------------------------
 class _StatusStepper extends StatelessWidget {
   const _StatusStepper();
 
@@ -164,148 +132,82 @@ class _StatusStepper extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        _stepCompleted(
-          title: 'Donation Accepted',
-          subtitle: '10:30 AM • Restaurant confirmed',
-        ),
-        _stepActive(
-          title: 'On the Way',
-          subtitle: 'Driver is heading to destination',
-        ),
-        _stepPending(
-          title: 'Picked Up',
-          subtitle: 'Estimated 10:55 AM',
-        ),
+        _step(true, 'Donation Accepted', '10:30 AM • Restaurant confirmed',
+            isLast: false),
+        _step(true, 'On the Way', 'Driver is heading to destination',
+            isLast: false, isActive: true),
+        _step(false, 'Picked Up', 'Estimated 10:55 AM', isLast: true),
       ],
     );
   }
 
-  Widget _stepCompleted({required String title, required String subtitle}) {
-    return _StepRow(
-      indicator: Container(
-        width: 24,
-        height: 24,
-        decoration: const BoxDecoration(
-          color: PickupStatusPage.primary,
-          shape: BoxShape.circle,
-        ),
-        child: const Icon(Icons.check, size: 16, color: Colors.white),
-      ),
-      lineColor: PickupStatusPage.primary,
-      title: title,
-      subtitle: subtitle,
-      faded: true,
-    );
-  }
-
-  Widget _stepActive({required String title, required String subtitle}) {
-    return _StepRow(
-      indicator: Container(
-        width: 24,
-        height: 24,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          border: Border.all(color: PickupStatusPage.primary, width: 2),
-        ),
-        child: const Center(
-          child: CircleAvatar(
-              radius: 4, backgroundColor: PickupStatusPage.primary),
-        ),
-      ),
-      lineColor: Colors.grey.shade300,
-      title: title,
-      subtitle: subtitle,
-      active: true,
-    );
-  }
-
-  Widget _stepPending({required String title, required String subtitle}) {
-    return _StepRow(
-      indicator: Container(
-        width: 24,
-        height: 24,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          border: Border.all(color: Colors.grey.shade300, width: 2),
-        ),
-      ),
-      showLine: false,
-      title: title,
-      subtitle: subtitle,
-      faded: true,
-    );
-  }
-}
-
-class _StepRow extends StatelessWidget {
-  final Widget indicator;
-  final Color? lineColor;
-  final String title;
-  final String subtitle;
-  final bool faded;
-  final bool active;
-  final bool showLine;
-
-  const _StepRow({
-    required this.indicator,
-    this.lineColor,
-    required this.title,
-    required this.subtitle,
-    this.faded = false,
-    this.active = false,
-    this.showLine = true,
-  });
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _step(
+    bool done,
+    String title,
+    String sub, {
+    required bool isLast,
+    bool isActive = false,
+  }) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Column(
           children: [
-            indicator,
-            if (showLine)
+            Container(
+              width: 24,
+              height: 24,
+              decoration: BoxDecoration(
+                color: done ? PickupStatusPage.primary : Colors.white,
+                border: Border.all(
+                  color: done ? PickupStatusPage.primary : Colors.grey.shade300,
+                  width: 2,
+                ),
+                shape: BoxShape.circle,
+              ),
+              child: done
+                  ? const Icon(Icons.check, size: 14, color: Colors.white)
+                  : null,
+            ),
+            if (!isLast)
               Container(
                 width: 2,
                 height: 40,
-                color: lineColor ?? Colors.transparent,
+                color: done ? PickupStatusPage.primary : Colors.grey.shade200,
               ),
           ],
         ),
         const SizedBox(width: 16),
         Expanded(
-          child: Opacity(
-            opacity: faded ? 0.6 : 1,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: active ? 18 : 15,
-                    fontWeight: FontWeight.bold,
-                    color: active ? PickupStatusPage.primary : Colors.black,
-                  ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: isActive ? 18 : 15,
+                  color: isActive ? PickupStatusPage.primary : Colors.black87,
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: const TextStyle(fontSize: 13, color: Colors.grey),
+              ),
+              Text(
+                sub,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey,
                 ),
-                const SizedBox(height: 12),
-              ],
-            ),
+              ),
+              const SizedBox(height: 15),
+            ],
           ),
-        ),
+        )
       ],
     );
   }
 }
 
-/// ------------------------------------------------------------
-/// DRIVER CARD
-/// ------------------------------------------------------------
 class _DriverCard extends StatelessWidget {
+  const _DriverCard();
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -314,38 +216,25 @@ class _DriverCard extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
       ),
-      child: Row(
+      child: const Row(
         children: [
-          const CircleAvatar(
+          CircleAvatar(
             radius: 24,
             backgroundImage: NetworkImage(
               'https://randomuser.me/api/portraits/women/44.jpg',
             ),
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
-                Text(
-                  'Sarah J.',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
+              children: [
+                Text('Sarah J.', style: TextStyle(fontWeight: FontWeight.bold)),
                 SizedBox(height: 4),
-                Text(
-                  '⭐ 4.9 • Toyota Prius',
-                  style: TextStyle(fontSize: 12, color: Colors.grey),
-                ),
+                Text('⭐ 4.9 • Toyota Prius',
+                    style: TextStyle(fontSize: 12, color: Colors.grey)),
               ],
             ),
-          ),
-          Container(
-            decoration: BoxDecoration(
-              color: PickupStatusPage.primary.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            padding: const EdgeInsets.all(10),
-            child: const Icon(Icons.call, color: PickupStatusPage.primary),
           ),
         ],
       ),
@@ -353,10 +242,9 @@ class _DriverCard extends StatelessWidget {
   }
 }
 
-/// ------------------------------------------------------------
-/// DONATION DETAILS
-/// ------------------------------------------------------------
 class _DonationDetails extends StatelessWidget {
+  const _DonationDetails();
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -378,8 +266,8 @@ class _DonationDetails extends StatelessWidget {
             color: Colors.white,
             borderRadius: BorderRadius.circular(20),
           ),
-          child: Column(
-            children: const [
+          child: const Column(
+            children: [
               _DetailRow('Assorted Pastries (Box)', 'x2'),
               SizedBox(height: 8),
               _DetailRow('Sandwich Platter', 'x1'),
@@ -402,17 +290,16 @@ class _DetailRow extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(name, style: const TextStyle(fontSize: 14)),
+        Text(name),
         Text(qty, style: const TextStyle(fontWeight: FontWeight.bold)),
       ],
     );
   }
 }
 
-/// ------------------------------------------------------------
-/// MAP PIN
-/// ------------------------------------------------------------
 class _PulsingPin extends StatelessWidget {
+  const _PulsingPin();
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -432,9 +319,6 @@ class _PulsingPin extends StatelessWidget {
   }
 }
 
-/// ------------------------------------------------------------
-/// ICON BUTTON
-/// ------------------------------------------------------------
 class _CircleButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;

@@ -12,6 +12,11 @@ class DummyFoodRepo {
         expiry: 'Tomorrow 1pm',
         pickupTime: '9:00 PM',
         location: 'Moulali',
+        latitude: 17.4399,
+        longitude: 78.4983,
+        phone: '9876543210',
+        notes:
+            'Freshly prepared vegetable biryani. Please collect within time.',
       ),
       FoodItem(
         id: '2',
@@ -21,7 +26,11 @@ class DummyFoodRepo {
         quantity: '450',
         expiry: 'Today',
         pickupTime: 'Today 3pm',
-        location: 'City Cente',
+        location: 'City Center',
+        latitude: 17.4440,
+        longitude: 78.4820,
+        phone: '9876543211',
+        notes: 'Soft chapatis packed in boxes.',
       ),
       FoodItem(
         id: '3',
@@ -32,6 +41,10 @@ class DummyFoodRepo {
         expiry: '26-03-26',
         pickupTime: '7:30 PM',
         location: 'City Center',
+        latitude: 17.4435,
+        longitude: 78.4808,
+        phone: '9876543212',
+        notes: 'Assorted snack mix, suitable for distribution.',
       ),
       FoodItem(
         id: '4',
@@ -42,6 +55,10 @@ class DummyFoodRepo {
         expiry: 'Today',
         pickupTime: '6:30 PM',
         location: 'City Center',
+        latitude: 17.4421,
+        longitude: 78.4799,
+        phone: '9876543213',
+        notes: 'Freshly baked veg puffs.',
       ),
       FoodItem(
         id: '5',
@@ -52,6 +69,10 @@ class DummyFoodRepo {
         expiry: 'Today',
         pickupTime: '5:30 PM',
         location: 'City Center',
+        latitude: 17.4415,
+        longitude: 78.4812,
+        phone: '9876543214',
+        notes: 'Evening snack combo pack.',
       ),
     ];
   }

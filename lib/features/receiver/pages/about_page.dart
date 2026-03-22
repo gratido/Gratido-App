@@ -65,7 +65,6 @@ class AboutPage extends StatelessWidget {
     );
   }
 
-  // ---------- SHARED CARD ----------
   Widget _card(Widget child) {
     return Container(
       width: double.infinity,
@@ -78,7 +77,6 @@ class AboutPage extends StatelessWidget {
     );
   }
 
-  // ---------- HERO (LOGO REPLACED ONLY) ----------
   Widget _hero() {
     return Row(
       children: [
@@ -91,15 +89,8 @@ class AboutPage extends StatelessWidget {
           ),
           child: SvgPicture.asset(
             'assets/images/Gratido transperant.svg',
-            colorFilter: ColorFilter.mode(
-              primaryColor,
-              BlendMode.srcIn,
-            ),
+            colorFilter: const ColorFilter.mode(primaryColor, BlendMode.srcIn),
             fit: BoxFit.contain,
-            placeholderBuilder: (_) => const Icon(
-              Icons.image,
-              color: primaryColor,
-            ),
           ),
         ),
         const SizedBox(width: 16),
@@ -110,14 +101,14 @@ class AboutPage extends StatelessWidget {
               Text(
                 "Receive kindness. Deliver hope.",
                 style: TextStyle(
-                    fontSize: 19,
+                    fontSize: 18,
                     fontWeight: FontWeight.w700,
                     color: Colors.black87),
               ),
               SizedBox(height: 6),
               Text(
                 "A community-driven platform connecting surplus food providers to organisations in need.",
-                style: TextStyle(fontSize: 13, color: Colors.black54),
+                style: TextStyle(fontSize: 14, color: Colors.black54),
               ),
             ],
           ),
@@ -126,7 +117,6 @@ class AboutPage extends StatelessWidget {
     );
   }
 
-  // ---------- REST UNCHANGED ----------
   Widget _banner() {
     return ClipRRect(
       borderRadius: BorderRadius.circular(24),
@@ -144,17 +134,16 @@ class AboutPage extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text("About Gratido",
-            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
         SizedBox(height: 8),
         Text(
           "Gratido connects volunteers, local kitchens, bakeries and organisations with receivers through a fast and simple app.",
-          style: TextStyle(fontSize: 13, color: Colors.black54),
+          style: TextStyle(fontSize: 14, color: Colors.black54),
         ),
       ],
     );
   }
 
-  // ================= FIX 1 =================
   Widget _missionVisionFixed() {
     return IntrinsicHeight(
       child: Row(
@@ -181,7 +170,6 @@ class AboutPage extends StatelessWidget {
     );
   }
 
-  // ================= FIX 2 =================
   Widget _valuesFixed() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -227,7 +215,7 @@ class AboutPage extends StatelessWidget {
         ),
         child: Text(
           text,
-          style: const TextStyle(fontSize: 12, color: Colors.black87),
+          style: const TextStyle(fontSize: 11, color: Colors.black87),
         ),
       ),
     );
@@ -257,7 +245,7 @@ class AboutPage extends StatelessWidget {
             style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
         const SizedBox(height: 6),
         const Text("Need help or want to partner with us?",
-            style: TextStyle(fontSize: 13, color: Colors.black54)),
+            style: TextStyle(fontSize: 15, color: Colors.black54)),
         const SizedBox(height: 16),
         Row(
           children: [
@@ -269,8 +257,12 @@ class AboutPage extends StatelessWidget {
                     MaterialPageRoute(builder: (_) => const FeedbackFormPage()),
                   );
                 },
-                child:
-                    const Text("Send feedback", style: TextStyle(fontSize: 11)),
+                child: const Text(
+                  "Send feedback",
+                  style: TextStyle(fontSize: 12),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ),
             const SizedBox(width: 12),
@@ -281,7 +273,7 @@ class AboutPage extends StatelessWidget {
                   backgroundColor: primaryColor,
                   foregroundColor: Colors.white,
                 ),
-                child: const Text("Contact us", style: TextStyle(fontSize: 11)),
+                child: const Text("Contact us", style: TextStyle(fontSize: 13)),
               ),
             ),
           ],
@@ -290,8 +282,6 @@ class AboutPage extends StatelessWidget {
     );
   }
 }
-
-// ================= HELPERS =================
 
 class _EqualIconCard extends StatelessWidget {
   final String title;
@@ -314,9 +304,8 @@ class _EqualIconCard extends StatelessWidget {
       ),
       child: Column(
         children: [
-          // 🔒 FIXED HEIGHT HEADER (ICON + TITLE)
           SizedBox(
-            height: 78, // 🔑 same for both cards
+            height: 78,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -328,23 +317,22 @@ class _EqualIconCard extends StatelessWidget {
                 Text(
                   title,
                   style: const TextStyle(
-                    fontSize: 14,
+                    fontSize: 15,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
               ],
             ),
           ),
-
           const SizedBox(height: 8),
-
-          // 🔓 FLEXIBLE TEXT AREA
           Expanded(
             child: Text(
               text,
               textAlign: TextAlign.center,
               style: const TextStyle(
-                fontSize: 13,
+                fontSize: 12,
+                // 🔥 change size here
+                height: 1.4,
                 color: Colors.black54,
               ),
             ),
@@ -399,7 +387,7 @@ class _Step extends StatelessWidget {
               children: [
                 Text(title,
                     style: const TextStyle(
-                        fontSize: 14, fontWeight: FontWeight.w600)),
+                        fontSize: 15, fontWeight: FontWeight.w600)),
                 const SizedBox(height: 4),
                 Text(desc,
                     style:

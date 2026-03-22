@@ -1,10 +1,7 @@
-// lib/main.dart
-// Full file — uses onGenerateRoute to safely handle DonationDetail with runtime args.
 
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:gratido_sample/features/receiver/auth/receiver_registration.dart';
-
 import 'features/donor/add_donations/add_donations.dart';
 import 'features/donor/mydonations.dart';
 import 'features/donor/donor_listing.dart';
@@ -19,7 +16,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
   await Supabase.initialize(
-    url: 'https://iryipjtijhtalkcoddqv.supabase.co', // 👈 PASTE YOUR URL HERE
+    url: 'https://iryipjtijhtalkcoddqv.supabase.co',
     anonKey:
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlyeWlwanRpamh0YWxrY29kZHF2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk4MTA0MDAsImV4cCI6MjA4NTM4NjQwMH0.2_Yjn-aSwltyU1kzFHRe1Ijqr_5OD8d4WSDK_4dj69c', // 👈 PASTE YOUR KEY HERE
   );

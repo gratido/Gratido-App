@@ -1,19 +1,9 @@
-// ignore_for_file: deprecated_member_use, use_build_context_synchronously
 
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../donor/auth/donor_registration.dart';
 import '../receiver/auth/receiver_registration.dart';
 
-/// --------------------------------------------------------
-/// DONOR LOCATION POPUP (UPDATED UI + COPY ONLY)
-/// --------------------------------------------------------
-/// --------------------------------------------------------
-/// DONOR LOCATION POPUP — FINAL VERSION
-/// --------------------------------------------------------
-/// --------------------------------------------------------
-/// DONOR LOCATION POPUP — COMPACT VERSION
-/// --------------------------------------------------------
 Future<Object?> showAnimatedLocationPopup(BuildContext context) async {
   const Color primaryPurple = Color(0xFF7C3AED);
   const Color secondaryGrey = Color(0xFF6B7280);
@@ -68,9 +58,9 @@ Future<Object?> showAnimatedLocationPopup(BuildContext context) async {
                                 boxShadow: [
                                   BoxShadow(
                                     color: primaryPurple
-                                        .withOpacity(0.34), // ⬅️ +5%
-                                    blurRadius: 70, // ⬅️ wider fade
-                                    spreadRadius: 20, // ⬅️ reaches sides
+                                        .withOpacity(0.34), 
+                                    blurRadius: 70, 
+                                    spreadRadius: 20, 
                                   ),
                                 ],
                               ),
@@ -182,7 +172,6 @@ Future<Object?> showAnimatedLocationPopup(BuildContext context) async {
 class SelectionScreen extends StatelessWidget {
   const SelectionScreen({super.key});
 
-  // 🎨 COLORS
   static const Color primaryPurple = Color(0xFF7C3AED);
   static const Color wordPurple = Color(0xFF5B49C1);
   static const Color softBlack = Color.fromARGB(255, 34, 34, 36);
@@ -291,9 +280,6 @@ class SelectionScreen extends StatelessWidget {
     );
   }
 
-  /// -------------------------------------------------
-  /// GLASS CARD (UNCHANGED)
-  /// -------------------------------------------------
   Widget _buildGlassCard({
     required IconData icon,
     required bool isShare,

@@ -1,28 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-
 import 'receiver_detail.dart';
 import 'receiver_listings.dart';
 import 'receiver_profile.dart';
-import 'pages/receiver_notifications_page.dart';
-
-// ✅ NEW IMPORTS (MODEL + DUMMY REPO)
+//import 'pages/receiver_notifications_page.dart';
 import 'models/food_item.dart';
-//import 'models/dummy_food_repo.dart';
-import 'package:http/http.dart' as http; // ✅ Required for backend API call
-import 'dart:convert'; // ✅ For JSON decoding
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
-// ================= COLORS =================
 const Color kPrimary = Color(0xFF6E5CD6);
 const Color kPrimarySoft = Color(0x226E5CD6);
 const Color kBg = Color(0xFFF6F3FF);
 
-// ================= PAGE =================
 class ReceiverHomePage extends StatefulWidget {
   final bool isVerified;
   final String address;
-  final double lat; // ✅ NEW
+  final double lat;
   final double lng;
+
   const ReceiverHomePage({
     super.key,
     this.isVerified = false,
@@ -37,22 +32,32 @@ class ReceiverHomePage extends StatefulWidget {
 
 class _ReceiverHomePageState extends State<ReceiverHomePage> {
   int _navIndex = 0;
-
   late List<FoodItem> _cards = [];
+  late List<FoodItem> _allCards = [];
   bool _isLoading = true;
+
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    _fetchNearbyDonations(); // ✅ Call the real API
+    _fetchNearbyDonations();
   }
 
-  // 🕵️‍♂️ SENIOR LOGIC: Fetches REAL data from C# Nearby API
   Future<void> _fetchNearbyDonations() async {
+    const String laptopIp = "192.168.0.5";
+    const double searchRadius = 15.0;
+
     try {
+      debugPrint(
+        "Searching within ${searchRadius}km of Lat: ${widget.lat}, Lng: ${widget.lng}",
+      );
+      debugPrint("HOME LAT: ${widget.lat}, LNG: ${widget.lng}");
+
       final response = await http.get(
         Uri.parse(
-            'http://192.168.0.4:5227/api/Donation/nearby?lat=${widget.lat}&lng=${widget.lng}&radius=100'),
+          'http://$laptopIp:5227/api/Donation/nearby?lat=${widget.lat}&lng=${widget.lng}&radius=$searchRadius',
+        ),
       );
 
       if (response.statusCode == 200) {
@@ -60,29 +65,50 @@ class _ReceiverHomePageState extends State<ReceiverHomePage> {
         final List<dynamic> data = decoded['data'];
 
         setState(() {
-          _cards = data.map((item) => FoodItem.fromJson(item)).toList();
+          _allCards = data.map((item) => FoodItem.fromJson(item)).toList();
+          _cards = List.from(_allCards); // Copy for filtering
           _isLoading = false;
         });
-        debugPrint("✅ Fetched ${_cards.length} real donations nearby.");
+
+        debugPrint("Found ${_cards.length} donations.");
+      } else {
+        debugPrint("Server error: ${response.statusCode}");
+        setState(() => _isLoading = false);
       }
     } catch (e) {
-      debugPrint("❌ Error fetching donations: $e");
+      debugPrint("Connection error: $e");
       setState(() => _isLoading = false);
     }
   }
 
-  // ================= BUILD =================
+  void _filterFood(String query) {
+    final search = query.trim().toLowerCase();
+
+    if (search.isEmpty) {
+      setState(() {
+        _cards = List.from(_allCards);
+      });
+    } else {
+      setState(() {
+        _cards = _allCards.where((item) {
+          final titleMatch = item.title.toLowerCase().contains(search);
+          final categoryMatch = item.category.toLowerCase().contains(search);
+          return titleMatch || categoryMatch;
+        }).toList();
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: kBg,
-      resizeToAvoidBottomInset: false, // ✅ Keeps FAB static
+      resizeToAvoidBottomInset: false,
       body: _isLoading
           ? const Center(
-              child:
-                  CircularProgressIndicator(color: kPrimary)) // ✅ Show loader
+              child: CircularProgressIndicator(color: kPrimary),
+            )
           : RefreshIndicator(
-              // ✅ Allow user to pull-to-refresh
               onRefresh: _fetchNearbyDonations,
               child: SafeArea(
                 child: SingleChildScrollView(
@@ -97,14 +123,14 @@ class _ReceiverHomePageState extends State<ReceiverHomePage> {
                       const SizedBox(height: 15),
                       _hero(),
                       const SizedBox(height: 20),
-                      // Show a message if no food is found
                       if (_cards.isEmpty)
                         const Padding(
                           padding: EdgeInsets.all(40.0),
                           child: Text(
-                              "No donations nearby right now. Try again later!",
-                              textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.grey)),
+                            "No donations nearby right now. Try again later!",
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: Colors.grey),
+                          ),
                         )
                       else
                         _stackArea(),
@@ -121,7 +147,6 @@ class _ReceiverHomePageState extends State<ReceiverHomePage> {
     );
   }
 
-  // ================= HEADER =================
   Widget _header() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -130,11 +155,10 @@ class _ReceiverHomePageState extends State<ReceiverHomePage> {
           const Icon(Icons.location_on, color: kPrimary),
           const SizedBox(width: 6),
           Expanded(
-            // ✅ Added Expanded to prevent overflow
             child: Text(
-              widget.address, // ✅ Uses dynamic address from registration
-              maxLines: 1, // ✅ Restrict to one line
-              overflow: TextOverflow.ellipsis, // ✅ Adds "..." if too long
+              widget.address,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
           ),
@@ -145,7 +169,11 @@ class _ReceiverHomePageState extends State<ReceiverHomePage> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => const ReceiverNotificationsPage(),
+                  builder: (_) => ReceiverListingsPage(
+                    isVerified: widget.isVerified,
+                    lat: widget.lat, // ✅ Pass current lat
+                    lng: widget.lng, // ✅ Pass current lng
+                  ),
                 ),
               );
             },
@@ -155,11 +183,12 @@ class _ReceiverHomePageState extends State<ReceiverHomePage> {
     );
   }
 
-  // ================= SEARCH =================
   Widget _search() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: TextField(
+        controller: _searchController,
+        onChanged: _filterFood,
         decoration: InputDecoration(
           hintText: "Search for food near you...",
           hintStyle: const TextStyle(
@@ -179,7 +208,6 @@ class _ReceiverHomePageState extends State<ReceiverHomePage> {
     );
   }
 
-  // ================= HERO =================
   Widget _hero() {
     return SizedBox(
       height: 200,
@@ -201,7 +229,6 @@ class _ReceiverHomePageState extends State<ReceiverHomePage> {
     );
   }
 
-  // ================= STACK =================
   Widget _stackArea() {
     const cardHeight = 360.0;
     const verticalOffset = 24.0;
@@ -220,7 +247,6 @@ class _ReceiverHomePageState extends State<ReceiverHomePage> {
         children: List.generate(visibleCards.length, (i) {
           final depth = visibleCards.length - 1 - i;
           final card = visibleCards[i];
-
           final scale = 1.0 - depth * 0.035;
 
           return Positioned(
@@ -262,16 +288,15 @@ class _ReceiverHomePageState extends State<ReceiverHomePage> {
     );
   }
 
-  // ================= ACTIONS =================
   void _accept(FoodItem item) {
-    // ✅ RESTRICTED ACCESS POPUP
     if (!widget.isVerified) {
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
           title: const Text("Verification Pending"),
           content: const Text(
-              "Your documents are still under verification. Please try after they have been verified."),
+            "Your documents are still under verification. Please try after they have been verified.",
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
@@ -280,10 +305,9 @@ class _ReceiverHomePageState extends State<ReceiverHomePage> {
           ],
         ),
       );
-      return; // Stop here
+      return;
     }
 
-    // Existing logic for verified users
     setState(() => _cards.remove(item));
 
     Navigator.push(
@@ -294,12 +318,10 @@ class _ReceiverHomePageState extends State<ReceiverHomePage> {
     );
   }
 
-  // ✅ ADD THIS BACK: It was missing in your error log
   void _decline(FoodItem item) {
     setState(() => _cards.remove(item));
   }
 
-  // ================= FOOTER =================
   Widget _swipeHint() {
     return const Column(
       mainAxisSize: MainAxisSize.min,
@@ -317,13 +339,10 @@ class _ReceiverHomePageState extends State<ReceiverHomePage> {
     );
   }
 
-  // ================= FAB =================
   Widget _fab() {
     return Container(
       width: 64,
       height: 64,
-      // The FAB is docked to the center. To keep it static during popups,
-      // ensure the Scaffold's resizeToAvoidBottomInset is false.
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: kPrimary,
@@ -341,7 +360,11 @@ class _ReceiverHomePageState extends State<ReceiverHomePage> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => const ReceiverListingsPage(),
+              builder: (_) => ReceiverListingsPage(
+                isVerified: widget.isVerified,
+                lat: widget.lat,
+                lng: widget.lng,
+              ),
             ),
           );
         },
@@ -349,7 +372,6 @@ class _ReceiverHomePageState extends State<ReceiverHomePage> {
     );
   }
 
-  // ================= NAV =================
   Widget _bottomNav() {
     return BottomAppBar(
       color: Colors.white,
@@ -370,6 +392,7 @@ class _ReceiverHomePageState extends State<ReceiverHomePage> {
 
   Widget _nav(IconData icon, String label, int index) {
     final selected = _navIndex == index;
+
     return InkWell(
       onTap: () {
         if (index == 1) {
@@ -399,7 +422,6 @@ class _ReceiverHomePageState extends State<ReceiverHomePage> {
   }
 }
 
-// ================= HERO CARD =================
 class _HeroCard extends StatelessWidget {
   final String image;
   final String title;
@@ -420,23 +442,18 @@ class _HeroCard extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            // ---------- IMAGE ----------
             image.endsWith('.svg')
                 ? SvgPicture.asset(
                     image,
                     fit: BoxFit.cover,
                   )
-                : Image.asset(
+                : Image.network(
                     image,
                     fit: BoxFit.cover,
                   ),
-
-            // ---------- CONTRAST REDUCER (softens image) ----------
             Container(
               color: Colors.black.withOpacity(0.08),
             ),
-
-            // ---------- PURPLE GRADIENT SHADOW ----------
             Positioned(
               bottom: 0,
               left: 0,
@@ -448,7 +465,7 @@ class _HeroCard extends StatelessWidget {
                     begin: Alignment.bottomCenter,
                     end: Alignment.topCenter,
                     colors: [
-                      Color.fromARGB(230, 0, 0, 0), // deep purple
+                      Color.fromARGB(230, 0, 0, 0),
                       Color.fromARGB(153, 0, 0, 0),
                       Color(0x332E1F5E),
                       Colors.transparent,
@@ -457,8 +474,6 @@ class _HeroCard extends StatelessWidget {
                 ),
               ),
             ),
-
-            // ---------- TEXT ----------
             Positioned(
               left: 16,
               right: 16,
@@ -494,7 +509,6 @@ class _HeroCard extends StatelessWidget {
   }
 }
 
-// ================= SWIPE CARD =================
 class _SwipeCard extends StatefulWidget {
   final FoodItem card;
   final VoidCallback onAccept;
@@ -536,8 +550,9 @@ class _SwipeCardState extends State<_SwipeCard> {
 
   Widget _foodCard(FoodItem card) {
     final String imagePath = card.images.isNotEmpty ? card.images.first : "";
-    final bool isWebUrl = imagePath.startsWith(
-        '/data/user/0/com.example.gratido_sample/cache/scaled_318b768e-004d-41d2-8a0a-0a7387072b454890145301184743664.jpg,/data/user/0/com.example.gratido_sample/cache/scaled_0fd07c22-e402-4e88-a6c5-8c2d5261ff724575523712942807748.jpg');
+
+    final bool isWebUrl =
+        imagePath.startsWith('http://') || imagePath.startsWith('https://');
 
     return Material(
       borderRadius: BorderRadius.circular(32),
@@ -550,12 +565,42 @@ class _SwipeCardState extends State<_SwipeCard> {
             padding: const EdgeInsets.fromLTRB(14, 14, 14, 0),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(24),
-              child: Image.asset(
-                card.images.first,
-                height: 160,
-                width: double.infinity,
-                fit: BoxFit.cover,
-              ),
+              child: imagePath.isEmpty
+                  ? Container(
+                      height: 160,
+                      width: double.infinity,
+                      color: Colors.grey.shade200,
+                      alignment: Alignment.center,
+                      child: const Icon(
+                        Icons.image_not_supported,
+                        size: 40,
+                        color: Colors.grey,
+                      ),
+                    )
+                  : isWebUrl
+                      ? Image.network(
+                          imagePath,
+                          height: 160,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              height: 160,
+                              color: Colors.grey.shade200,
+                              alignment: Alignment.center,
+                              child: const Icon(
+                                Icons.broken_image,
+                                color: Colors.grey,
+                              ),
+                            );
+                          },
+                        )
+                      : Image.asset(
+                          imagePath,
+                          height: 160,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                        ),
             ),
           ),
           Padding(
@@ -607,9 +652,17 @@ class _SwipeCardState extends State<_SwipeCard> {
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
             child: Row(
               children: [
-                _pill("DECLINE", kPrimarySoft, widget.onDecline),
+                _pill(
+                  "DECLINE",
+                  kPrimarySoft,
+                  widget.onDecline,
+                ),
                 const SizedBox(width: 12),
-                _pill("ACCEPT", kPrimary, widget.onAccept),
+                _pill(
+                  "ACCEPT",
+                  kPrimary,
+                  widget.onAccept,
+                ),
               ],
             ),
           ),
@@ -647,7 +700,7 @@ class _SwipeCardState extends State<_SwipeCard> {
           Text(
             value,
             maxLines: 1,
-            overflow: TextOverflow.ellipsis, // ✅ GUARANTEED safety
+            overflow: TextOverflow.ellipsis,
             style: const TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.bold,

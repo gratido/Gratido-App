@@ -23,7 +23,6 @@ class _DonorLocationPageState extends State<DonorLocationPage> {
   LatLng? _currentLocation;
   String _addressText = "Fetching location...";
 
-  // 🔒 stability guards
   bool _isLoading = false;
   String _lastSearch = '';
   DateTime _lastRequestTime = DateTime.fromMillisecondsSinceEpoch(0);

@@ -1,11 +1,8 @@
-// lib/features/donor/add_donations/add_donations.dart
-// ignore_for_file: use_build_context_synchronously
 import 'package:flutter/material.dart';
 import 'controllers/contact_controller.dart';
 import 'controllers/food_controller.dart';
 import 'donor_widgets/donor_widgets.dart';
 import '../map_picker.dart';
-//import '../donor_listing.dart';
 import '../myDonations.dart';
 
 class AddDonationsScreen extends StatefulWidget {
@@ -39,7 +36,10 @@ class _AddDonationsScreenState extends State<AddDonationsScreen>
       }
     });
 
-    _contact.loadSavedContact();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+  await _contact.loadSavedContact();
+  setState(() {});
+});
   }
 
   bool _isContactValid() {
@@ -195,11 +195,14 @@ class _AddDonationsScreenState extends State<AddDonationsScreen>
     return await showTimePicker(context: context, initialTime: TimeOfDay.now());
   }
 
-  void _goToFoodTab() {
-    if (_isContactValid()) {
-      _tabController.animateTo(1);
-    }
+  Future<void> _goToFoodTab() async {
+  FocusScope.of(context).unfocus(); // commit text
+
+  if (_isContactValid()) {
+    await _contact.saveContact();   // ✅ SAVE HERE
+    _tabController.animateTo(1);
   }
+}
 
   Future<void> _openMapPicker() async {
     final result = await Navigator.push<String>(
@@ -207,12 +210,10 @@ class _AddDonationsScreenState extends State<AddDonationsScreen>
       MaterialPageRoute(builder: (_) => const MapPickerPage()),
     );
     if (result != null && result.trim().isNotEmpty) {
-      setState(() {
-        _contact.pickupController.text = result.trim();
-      });
-    }
+  _contact.pickupController.text = result.trim();
+  setState(() {});
+}
   }
-
   Future<void> _resetContactDetails() async {
     await _contact.resetContact();
     setState(() {}); // refresh UI

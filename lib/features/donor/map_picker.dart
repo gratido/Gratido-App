@@ -1,5 +1,4 @@
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
@@ -21,7 +20,6 @@ class _MapPickerPageState extends State<MapPickerPage> {
   LatLng? _currentLocation;
   String _addressText = "Fetching location...";
 
-  // 🔒 stability guards
   bool _isLoading = false;
   String _lastSearch = '';
   DateTime _lastRequestTime = DateTime.fromMillisecondsSinceEpoch(0);
@@ -31,8 +29,6 @@ class _MapPickerPageState extends State<MapPickerPage> {
     super.initState();
     _getCurrentLocation();
   }
-
-  // ================= CURRENT LOCATION =================
 
   Future<void> _getCurrentLocation() async {
     if (_isLoading) return;

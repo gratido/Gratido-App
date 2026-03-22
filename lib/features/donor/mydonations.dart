@@ -58,7 +58,7 @@ class _MyDonationsState extends State<MyDonations> {
     try {
       final token = await FirebaseAuth.instance.currentUser?.getIdToken();
       final response = await http.get(
-        Uri.parse('http://192.168.0.4:5227/api/Donation/my-donations'),
+        Uri.parse('http://192.168.0.5:5227/api/Donation/my-donations'),
         headers: {'Authorization': 'Bearer $token'},
       ).timeout(const Duration(seconds: 10));
 

@@ -29,15 +29,53 @@ class _DonorListingState extends State<DonorListing> {
   void _onRepoChanged() => setState(() {});
 
   // ---------- IMAGE ----------
+  // ---------- IMAGE ----------
   Widget _image(String? path) {
-    if (path == null) return Container(color: Colors.grey.shade200);
+    debugPrint("Donor listing image path: $path");
+
+    if (path == null || path.isEmpty) {
+      return Container(
+        color: Colors.grey.shade200,
+        alignment: Alignment.center,
+        child: const Icon(Icons.image_not_supported, color: Colors.grey),
+      );
+    }
+
+    // 🌐 If it's a Supabase URL (network image)
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      return Image.network(
+        path,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return Container(
+            color: Colors.grey.shade200,
+            alignment: Alignment.center,
+            child: const Icon(
+              Icons.broken_image,
+              color: Colors.grey,
+            ),
+          );
+        },
+      );
+    }
+
+    // 🗂 If it's an asset
     if (path.startsWith('assets/')) {
       return Image.asset(path, fit: BoxFit.cover);
     }
+
+    // 📁 If it's a local file path
     final file = File(path);
-    return file.existsSync()
-        ? Image.file(file, fit: BoxFit.cover)
-        : Container(color: Colors.grey.shade200);
+    if (file.existsSync()) {
+      return Image.file(file, fit: BoxFit.cover);
+    }
+
+    // ❌ fallback
+    return Container(
+      color: Colors.grey.shade200,
+      alignment: Alignment.center,
+      child: const Icon(Icons.broken_image, color: Colors.grey),
+    );
   }
 
   // ---------- QTY COLOR CYCLE ----------

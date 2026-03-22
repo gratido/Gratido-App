@@ -1,5 +1,3 @@
-// lib/features/donor/profile.dart
-// ignore_for_file: use_build_context_synchronously, non_constant_identifier_names
 
 import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -14,6 +12,8 @@ import 'pages/feedback_provider.dart';
 import 'pages/faq_provider.dart';
 import 'pages/edit_profile_provider.dart';
 import 'package:gratido_sample/features/selection_interface/selection.dart';
+import 'package:gratido_sample/features/donor/pages/donor_pickup_status.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class Profile extends StatefulWidget {
   const Profile({super.key});
@@ -39,14 +39,14 @@ class _ProfileState extends State<Profile> {
   }
 
   Future<void> _load() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _name = prefs.getString('donor_name') ?? '';
-      _phone = prefs.getString('donor_phone') ?? '';
-      _address = prefs.getString('donor_address') ?? '';
-      _photoPath = prefs.getString('donor_photo');
-      _email = prefs.getString('donor_email') ?? '';
-    });
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user != null) {
+      setState(() {
+        _email = user.email ?? '';
+        _name = user.displayName ?? '';
+      });
+    }
   }
 
   Future<void> _openEdit() async {
@@ -94,12 +94,7 @@ class _ProfileState extends State<Profile> {
         elevation: 0,
         backgroundColor: Colors.white,
         centerTitle: true,
-
-        // ✅ ensures icons
-        // (back + notification) are visible
         iconTheme: const IconThemeData(color: Colors.black),
-
-        // ✅ THIS is the key line (Material 3 safe)
         titleTextStyle: const TextStyle(
           color: Color.fromARGB(255, 78, 62, 171), // primary purple
           fontSize: 20,
@@ -144,6 +139,18 @@ class _ProfileState extends State<Profile> {
                   onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(builder: (_) => const MyDonations()),
+                  ),
+                ),
+                _item(
+                  icon: Icons.map_outlined,
+                  title: 'Pickup Status',
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const DonorPickupStatusPage(
+                              latitude: 17.447,
+                              longitude: 78.548,
+                            )),
                   ),
                 ),
               ]),
@@ -232,14 +239,14 @@ class _ProfileState extends State<Profile> {
               Text(
                 _name.isNotEmpty ? _name : 'No name saved',
                 style: const TextStyle(
-                  fontSize: 20,
+                  fontSize: 18,
                   fontWeight: FontWeight.w700,
                 ),
               ),
               const SizedBox(height: 4),
               Text(
                 _email.isNotEmpty ? _email : 'example@gmail.com',
-                style: const TextStyle(color: Colors.grey, fontSize: 14),
+                style: const TextStyle(color: Colors.grey, fontSize: 12),
               ),
               const SizedBox(height: 10),
               ElevatedButton(
@@ -310,8 +317,6 @@ class _ProfileState extends State<Profile> {
   }
 }
 
-// ---------------- IMAGE HELPER ----------------
-
 ImageProvider? FileImageFromPath(String? path) {
   if (path == null || path.isEmpty) return null;
   try {
@@ -323,8 +328,6 @@ ImageProvider? FileImageFromPath(String? path) {
     return null;
   }
 }
-
-// ---------------- SIGN OUT DIALOG (UNCHANGED) ----------------
 
 Future<void> showSignOutDialog(
   BuildContext context, {
@@ -418,10 +421,6 @@ Future<void> showSignOutDialog(
   );
 }
 
-// ---------------- DELETE ACCOUNT DIALOG (ONLY BUTTONS UPDATED) ----------------
-
-// ---------------- DELETE ACCOUNT DIALOG (TYPOGRAPHY & SIZE SYNCED) ----------------
-
 Future<void> showDeleteAccountDialog(BuildContext context) async {
   const Color primaryPurple = Color(0xFF7C3AED);
   const Color dangerRed = Color(0xFFDC2626);
@@ -443,9 +442,9 @@ Future<void> showDeleteAccountDialog(BuildContext context) async {
           opacity: anim.value,
           child: Center(
             child: Container(
-              width: dialogWidth, // ✅ SAME AS LOCATION POPUP
+              width: dialogWidth,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(22), // ✅ SAME
+                borderRadius: BorderRadius.circular(22), 
                 boxShadow: [
                   BoxShadow(
                     color: primaryPurple.withOpacity(0.22),
@@ -457,7 +456,7 @@ Future<void> showDeleteAccountDialog(BuildContext context) async {
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(22),
                 child: Container(
-                  padding: const EdgeInsets.fromLTRB(18, 16, 18, 18), // compact
+                  padding: const EdgeInsets.fromLTRB(18, 16, 18, 18), 
                   color: Colors.white,
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -501,8 +500,6 @@ Future<void> showDeleteAccountDialog(BuildContext context) async {
                       ),
 
                       const SizedBox(height: 10),
-
-                      // ✅ TITLE — EXACT SAME SYSTEM AS LOCATION POPUP
                       Text(
                         'Delete your account?',
                         textAlign: TextAlign.center,
@@ -513,8 +510,6 @@ Future<void> showDeleteAccountDialog(BuildContext context) async {
                       ),
 
                       const SizedBox(height: 6),
-
-                      // ✅ SUBTEXT — SAME BASE, SIZE −1
                       RichText(
                         textAlign: TextAlign.center,
                         text: TextSpan(
@@ -543,8 +538,6 @@ Future<void> showDeleteAccountDialog(BuildContext context) async {
 
                       const SizedBox(height: 18),
 
-                      // BUTTONS — UNCHANGED STRUCTURE FROM DELETE POPUP
-                      // ✅ BUTTONS — EXACTLY MATCH OLD DELETE POPUP
                       Row(
                         children: [
                           Expanded(

@@ -83,6 +83,7 @@ class AboutProviderPage extends StatelessWidget {
                           Text(
                             'A simple platform connecting providers to local receivers.',
                             style: TextStyle(
+                              fontSize: 14,
                               color: Colors.black54,
                               height: 1.4,
                             ),
@@ -137,7 +138,7 @@ class AboutProviderPage extends StatelessWidget {
                     Text(
                       'Reducing Waste, One Plate at a Time',
                       style: TextStyle(
-                        fontSize: 20,
+                        fontSize: 18,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
@@ -145,6 +146,7 @@ class AboutProviderPage extends StatelessWidget {
                     Text(
                       'Started with a simple observation of food waste, Gratido connects donors with communities to ensure no meal goes to waste.',
                       style: TextStyle(
+                        fontSize: 14,
                         color: Colors.black54,
                         height: 1.5,
                       ),
@@ -198,6 +200,7 @@ class AboutProviderPage extends StatelessWidget {
                           Text(
                             'Gratido bridges the gap',
                             style: TextStyle(
+                              fontSize: 16,
                               color: Colors.green,
                               fontWeight: FontWeight.w700,
                             ),
@@ -211,7 +214,6 @@ class AboutProviderPage extends StatelessWidget {
 
               const SizedBox(height: 24),
 
-              // ✅ HOW IT WORKS — NOW INSIDE CARD (ONLY CHANGE)
               _card(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -247,13 +249,15 @@ class AboutProviderPage extends StatelessWidget {
                             _HowStep(
                               index: '2',
                               title: 'Track pickup',
-                              subtitle: 'Track confirmations and volunteers.',
+                              subtitle:
+                                  'Track confirmations and volunteers.',
                             ),
                             SizedBox(height: 28),
                             _HowStep(
                               index: '3',
                               title: 'Complete',
-                              subtitle: 'Mark as picked up once collected.',
+                              subtitle:
+                                  'Mark as picked up once collected.',
                             ),
                           ],
                         ),
@@ -279,7 +283,10 @@ class AboutProviderPage extends StatelessWidget {
                     const SizedBox(height: 6),
                     const Text(
                       'Need help or want to partner with us?',
-                      style: TextStyle(color: Colors.black54),
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.black54,
+                      ),
                     ),
                     const SizedBox(height: 16),
                     Row(
@@ -302,7 +309,12 @@ class AboutProviderPage extends StatelessWidget {
                               ),
                               padding: const EdgeInsets.symmetric(vertical: 14),
                             ),
-                            child: const Text('Send feedback'),
+                            child: const Text(
+  "Send feedback",
+  style: TextStyle(fontSize: 12),
+  maxLines: 1,
+  overflow: TextOverflow.ellipsis,
+),
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -314,11 +326,13 @@ class AboutProviderPage extends StatelessWidget {
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(14),
                               ),
-                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 14),
                             ),
                             child: const Text(
                               'Contact us',
                               style: TextStyle(
+                                fontSize: 16,
                                 color: Colors.white,
                                 fontWeight: FontWeight.w700,
                               ),
@@ -386,7 +400,13 @@ class AboutProviderPage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 4),
-          Text(subtitle, style: const TextStyle(color: Colors.black54)),
+          Text(
+            subtitle,
+            style: const TextStyle(
+              fontSize: 16,
+              color: Colors.black54,
+            ),
+          ),
         ],
       ),
     );
@@ -443,13 +463,14 @@ class _HowStep extends StatelessWidget {
                 title,
                 style: const TextStyle(
                   fontWeight: FontWeight.w700,
-                  fontSize: 15,
+                  fontSize: 16,
                 ),
               ),
               const SizedBox(height: 4),
               Text(
                 subtitle,
                 style: const TextStyle(
+                  fontSize: 14,
                   color: Colors.black54,
                   height: 1.4,
                 ),

@@ -1,14 +1,12 @@
-// ignore_for_file: avoid_print
-import 'dart:convert'; // ✅ Added
+import 'dart:convert'; 
 import 'package:http/http.dart' as http;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:flutter/services.dart'; // ✅ Added for Clipboard functionality
-
+import 'package:flutter/services.dart'; 
 class FirebaseAuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  // v7: use the singleton instance instead of `GoogleSignIn(...)`
+
   final GoogleSignIn _googleSignIn = GoogleSignIn.instance;
 
   bool _isGoogleInitialized = false;
@@ -19,8 +17,6 @@ class FirebaseAuthService {
       _isGoogleInitialized = true;
     }
   }
-
-  // ✅ Helper method to get token and copy to clipboard without breaking logic
   Future<void> _handleToken(User? user) async {
     if (user != null) {
       final idToken = await user.getIdToken(true);
@@ -29,7 +25,7 @@ class FirebaseAuthService {
         await Clipboard.setData(ClipboardData(text: idToken));
 
         print("-----------------------------------------");
-        print("✅ AUTH SUCCESS!");
+        print("AUTH SUCCESS!");
         print("TOKEN COPIED TO CLIPBOARD.");
         print("Paste it into Postman now (Ctrl + V).");
         print("-----------------------------------------");
@@ -37,13 +33,12 @@ class FirebaseAuthService {
     }
   }
 
-  // ✅ SENIOR FIX: The logic that actually creates the row in Supabase
+  // The logic that actually creates the row in Supabase
   Future<void> _syncWithBackend(User? user, String role) async {
     if (user == null) return;
 
-    // 🚨 DOUBLE CHECK THIS IP right now using 'ipconfig'
     // If you are on a different Wi-Fi, this might have changed!
-    const String currentLaptopIp = "192.168.0.4";
+    const String currentLaptopIp = "192.168.0.5";
 
     try {
       final token = await user.getIdToken(true);
@@ -69,29 +64,46 @@ class FirebaseAuthService {
   }
 
   // ✨ EMAIL SIGNUP
-  Future<User?> signup(String email, String password, String role) async {
-    try {
-      final UserCredential userCredential =
-          await _auth.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
+  Future<User?> signup(
+  String email,
+  String password,
+  String role,
+  String fullName,
+) async {
+  try {
+    final UserCredential userCredential =
+        await _auth.createUserWithEmailAndPassword(
+      email: email,
+      password: password,
+    );
 
-      final User? user = userCredential.user;
-      if (user != null) {
-        // Attempt sync, but don't crash the whole app if laptop Wi-Fi fails
-        await _syncWithBackend(user, role);
-        await _handleToken(user);
-      }
-      return user;
-    } on FirebaseAuthException catch (e) {
-      print('🔥 Firebase Signup Error [${e.code}]: ${e.message}');
-      return null;
-    } catch (e) {
-      print('🔥 Unknown Signup Error: $e');
-      return null;
+    final User? user = userCredential.user;
+
+    if (user != null) {
+
+      // ✅ SET DISPLAY NAME
+      await user.updateDisplayName(fullName);
+
+      // ✅ Reload to refresh currentUser
+      await user.reload();
+
+      // 🔥 Run backend sync (no await = faster UI)
+      _syncWithBackend(user, role);
+
+      await _handleToken(user);
     }
+
+    return user;
+
+  } on FirebaseAuthException catch (e) {
+    print('🔥 Firebase Signup Error [${e.code}]: ${e.message}');
+    return null;
+  } catch (e) {
+    print('🔥 Unknown Signup Error: $e');
+    return null;
   }
+}
+
 
   // ✨ EMAIL LOGIN (Updated with Role and Sync)
   Future<User?> login(String email, String password, String role) async {
